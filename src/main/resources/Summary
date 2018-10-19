@@ -1,0 +1,45 @@
+
+
+
+1) Reactive System (Is being responsive)
+  * Is about architecture
+
+  * Elasticity <-  |  -> Resilience
+  *          MessageDriven
+
+2) Reactive Programming (asynchronous, non-blocking)
+  * efficient resource usage
+  * clear flow
+
+3) Reactive Streams specification (4 interfaces):
+  * Standard way of doing stream
+  * The main problem is Backpressure (RxJava 1) - brings the solution
+  * 4 main interfaces
+
+4) Composabilty
+  * Decoration Publishers
+  * Decoration Subscribers
+  * Decoration of Subscription
+5) Execution time
+  * Assembling (Decoration of Publisher)
+  * Subscription (Decoration of Subscriber | Subscription)
+  * Runtime (MapSubscriber#onNext( -> FilterSubscriber#onNext( Fin...)))
+
+6) Asynchronous and Parallel
+  * Parallel by stages (split horizontally) (PublishOn)
+     - There is sequence guaranties
+     - There is no strictly guaranties that the same thread will be responsible for next
+     batch
+  * Traditional Parallel may be achieved by using (ParallelFlux)
+
+  71Flux.map.mapfilter.map.map.filter.map
+  82Flux.map.mapfilter.map.map.filter.map
+  93Flux.map.mapfilter.map.map.filter.map
+  104Flux.map.mapfilter.map.map.filter.map
+  5Flux.map.mapfilter.map.map.filter.map
+  6Flux.map.mapfilter.map.map.filter.map
+
+7) FlatMap
+  - disadvatages: internal queues per inner publisher
+  - disadvatages: synchronization keyword
+  - disadvantages: there is no thread guaranties
