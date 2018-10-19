@@ -1,0 +1,37 @@
+plugins {
+    id 'java'
+    id 'me.champeau.gradle.jmh' version '0.4.8'
+}
+
+group 'org.demo.reactive'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.reactivestreams:reactive-streams:1.0.2'
+    compile 'io.projectreactor:reactor-core:3.2.8.RELEASE'
+    compile 'io.projectreactor:reactor-test:3.2.8.RELEASE'
+
+    testCompile 'org.reactivestreams:reactive-streams-tck:1.0.2'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    jmh 'org.openjdk.jmh:jmh-core:1.21'
+    jmh 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+}
+
+jmh {
+    resultFormat = 'JSON' // Result format type (one of CSV, JSON, NONE, SCSV, TEXT)
+    resultsFile = project.file("${project.buildDir}/reports/jmh/results.json")
+    duplicateClassesStrategy = 'warn' // Strategy to apply when encountring duplicate
+}
+
+test { //this is the gradle task to be executed
+    useTestNG() { //Tells Gradle to use TestNG
+        useDefaultListeners = true // Tells TestNG to execute its default reporting structure
+    }
+}
