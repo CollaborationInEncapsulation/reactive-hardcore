@@ -28,16 +28,13 @@ public class ArrayPublisher<T> implements Publisher<T> {
 
     @Override
     public void subscribe(Subscriber<? super T> subscriber) {
-        subscriber.onSubscribe(new ArraySubscription<>(array, subscriber));
-
+        subscriber.onSubscribe(new ArraySubscription<T>(array, subscriber));
     }
 
     private static class ArraySubscription<T> implements Subscription {
 
-        private final Subscriber<? super T> subscriber;
-
         private final T[] array;
-
+        private final Subscriber<? super T> subscriber;
         int index;
 
         volatile boolean canceled;
@@ -51,26 +48,25 @@ public class ArrayPublisher<T> implements Publisher<T> {
             this.subscriber = subscriber;
         }
 
-
         @Override
         public void request(long n) {
+
             long initialRequested;
-            long newValue;
 
             for (;;) {
-                initialRequested = REQUESTED.get(this);
+                initialRequested = requested;
 
                 if (initialRequested == Long.MAX_VALUE) {
                     return;
                 }
 
-                newValue = initialRequested + n;
+                n = initialRequested + n;
 
-                if (newValue <= 0) {
-                    newValue = Long.MAX_VALUE;
+                if (n <= 0) {
+                    n = Long.MAX_VALUE;
                 }
 
-                if (REQUESTED.compareAndSet(this, initialRequested, newValue)) {
+                if (REQUESTED.compareAndSet(this, initialRequested, n)) {
                     break;
                 }
             }
@@ -79,28 +75,16 @@ public class ArrayPublisher<T> implements Publisher<T> {
                 return;
             }
 
-            if (newValue > (array.length - index)) {
-                fastPath();
-            } else {
-                slowPath(newValue);
-            }
-
-        }
-
-        void slowPath(long newValue) {
             int sent = 0;
-            int idx = this.index;
-            T[] array = this.array;
-            int length = array.length;
-            Subscriber<? super T> subscriber = this.subscriber;
 
             while (true) {
-                for (; sent < newValue && idx < length; sent++, idx++) {
+
+                for (; sent < n && index < array.length; sent++, index++) {
                     if (canceled) {
                         return;
                     }
 
-                    T element = array[idx];
+                    T element = array[index];
 
                     if (element == null) {
                         subscriber.onError(new NullPointerException());
@@ -114,53 +98,21 @@ public class ArrayPublisher<T> implements Publisher<T> {
                     return;
                 }
 
-                if (idx == length) {
+                if (index == array.length) {
                     subscriber.onComplete();
                     return;
                 }
 
-                newValue = requested;
+                n = requested;
 
-                if (newValue == sent) {
-                    index = idx;
-                    newValue = REQUESTED.addAndGet(this, -sent);
-                    if (newValue == 0) {
+                if (n == sent) {
+                    n = REQUESTED.addAndGet(this, -sent);
+                    if (n == 0) {
                         return;
                     }
                 }
 
                 sent = 0;
-            }
-        }
-
-        void fastPath() {
-            int idx = this.index;
-            T[] array = this.array;
-            int length = array.length;
-            Subscriber<? super T> subscriber = this.subscriber;
-
-            for (; idx < length; idx++) {
-                if (canceled) {
-                    return;
-                }
-
-                T element = array[idx];
-
-                if (element == null) {
-                    subscriber.onError(new NullPointerException());
-                    return;
-                }
-
-                subscriber.onNext(element);
-            }
-
-            if (canceled) {
-                return;
-            }
-
-            if (idx == length) {
-                subscriber.onComplete();
-                return;
             }
         }
 
