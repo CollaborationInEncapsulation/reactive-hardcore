@@ -1,8 +1,10 @@
 package org.test.reactive;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -17,26 +19,72 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.EmitterProcessor;
+import reactor.core.publisher.Flux;
 
 @BenchmarkMode(Mode.Throughput)
-@Warmup(iterations = 2)
-@Measurement(iterations = 3, time = 3, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = 3)
+@Measurement(iterations = 4, time = 4, timeUnit = TimeUnit.SECONDS)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Fork(value = 1)
 @State(Scope.Thread)
 public class ArrayPublisherPerfTest {
-    @Param({ "1000000" })
+    @Param({ "10" })
     public int times;
 
-//    UnoptimizedArrayPublisher<Integer> unoptimizedArrayPublisher;
-    ArrayPublisher<Integer> arrayPublisher;
+    ArrayPublisherNonThreadSafeIml<Integer> nonThreadSafeArrayPublisher;
+    UnoptimizedArrayPublisher<Integer>      unoptimizedArrayPublisher;
+    ArrayPublisher<Integer>                 arrayPublisher;
+    Publisher<Integer>                      wrappedPublishers;
 
     @Setup
     public void setup() {
         Integer[] array = new Integer[times];
         Arrays.fill(array, 777);
-//        unoptimizedArrayPublisher = new UnoptimizedArrayPublisher<>(array);
+        unoptimizedArrayPublisher = new UnoptimizedArrayPublisher<>(array);
+        nonThreadSafeArrayPublisher = new ArrayPublisherNonThreadSafeIml<>(array);
         arrayPublisher = new ArrayPublisher<>(array);
+        wrappedPublishers = new FilterPublisher<>(
+            new MapPublisher<>(
+                new FilterPublisher<>(
+                    new MapPublisher<>(
+                            new ArrayPublisher<>(array),
+                            Function.identity()
+                    ),
+                    (__) -> true
+                ),
+                Function.identity()
+            ),
+            (__) -> true
+        );
+    }
+
+    @Benchmark
+    public Object unoptimizedPublisherPerformance(Blackhole bh) {
+        PerfSubscriber lo = new PerfSubscriber(bh);
+
+        unoptimizedArrayPublisher.subscribe(lo);
+
+        return lo;
+    }
+
+    @Benchmark
+    public Object nonThreadSafePublisherPerformance(Blackhole bh) {
+        PerfSubscriber lo = new PerfSubscriber(bh);
+
+        nonThreadSafeArrayPublisher.subscribe(lo);
+
+        return lo;
+    }
+
+    @Benchmark
+    public Object wrappedPublisherPerformance(Blackhole bh) {
+        PerfSubscriber lo = new PerfSubscriber(bh);
+
+        wrappedPublishers.subscribe(lo);
+
+        return lo;
     }
 
     @Benchmark
@@ -44,15 +92,6 @@ public class ArrayPublisherPerfTest {
         PerfSubscriber lo = new PerfSubscriber(bh);
 
         arrayPublisher.subscribe(lo);
-
-        return lo;
-    }
-
-    @Benchmark
-    public Object unoptimizedPublisherPerformance(Blackhole bh) {
-        PerfSubscriber lo = new PerfSubscriber(bh);
-
-//        unoptimizedArrayPublisher.subscribe(lo);
 
         return lo;
     }
