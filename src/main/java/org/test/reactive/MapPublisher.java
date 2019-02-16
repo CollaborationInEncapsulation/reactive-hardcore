@@ -1,12 +1,12 @@
 package org.test.reactive;
 
-import java.util.function.Function;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public class MapPublisher<IN, OUT> implements Publisher<OUT> {
+import java.util.function.Function;
+
+public class MapPublisher<IN, OUT> extends Flow<OUT> {
 
     private final Publisher<IN> parent;
     private final Function<IN, OUT> mapper;
@@ -28,6 +28,8 @@ public class MapPublisher<IN, OUT> implements Publisher<OUT> {
         private final Subscriber<? super OUT> inner;
         private final Function<IN, OUT> mapper;
 
+        private boolean done = false;
+
         private MapOperator(
             Subscriber<? super OUT> inner,
             Function<IN, OUT> mapper
@@ -43,20 +45,38 @@ public class MapPublisher<IN, OUT> implements Publisher<OUT> {
 
         @Override
         public void onNext(IN in) {
+            if (done) {
+                return;
+            }
+
             Subscriber<? super OUT> inner = this.inner;
 
-            OUT result = mapper.apply(in);
+            OUT result;
+            try {
+                result = mapper.apply(in);
+            } catch (Exception e) {
+                onError(e);
+                return;
+            }
 
             inner.onNext(result);
         }
 
         @Override
         public void onError(Throwable t) {
+            if (done) {
+                return;
+            }
+            done = true;
             inner.onError(t);
         }
 
         @Override
         public void onComplete() {
+            if (done) {
+                return;
+            }
+            done = true;
             inner.onComplete();
         }
     }

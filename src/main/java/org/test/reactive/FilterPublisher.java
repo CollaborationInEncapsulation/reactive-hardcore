@@ -1,13 +1,12 @@
 package org.test.reactive;
 
-import java.util.function.Function;
-import java.util.function.Predicate;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public class FilterPublisher<T> implements Publisher<T> {
+import java.util.function.Predicate;
+
+public class FilterPublisher<T> extends Flow<T> {
 
     private final Publisher<T>      parent;
     private final Predicate<T> filter;
@@ -29,6 +28,8 @@ public class FilterPublisher<T> implements Publisher<T> {
         private final Subscriber<? super T> inner;
         private final Predicate<T> filter;
 
+        private boolean done = false;
+
         private Subscription subscription;
 
         private FilterOperator(
@@ -47,10 +48,21 @@ public class FilterPublisher<T> implements Publisher<T> {
 
         @Override
         public void onNext(T t) {
+            if (done) {
+                return;
+            }
+
             Subscription s = this.subscription;
             Subscriber<? super T> inner = this.inner;
 
-            boolean valid = filter.test(t);
+            boolean valid;
+            try {
+                 valid = filter.test(t);
+            } catch (Exception ex) {
+                //s.cancel();
+                onError(ex);
+                return;
+            }
 
             if (valid) {
                 inner.onNext(t);
@@ -61,11 +73,19 @@ public class FilterPublisher<T> implements Publisher<T> {
 
         @Override
         public void onError(Throwable t) {
+            if (done) {
+                return;
+            }
+            done = true;
             inner.onError(t);
         }
 
         @Override
         public void onComplete() {
+            if (done) {
+                return;
+            }
+            done = true;
             inner.onComplete();
         }
     }

@@ -1,13 +1,9 @@
 package org.test.reactive;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 /**
  * Create Publisher that sends elements of a given array to each new subscriber
@@ -18,7 +14,7 @@ import org.reactivestreams.Subscription;
  *
  * @param <T>
  */
-public class ArrayPublisher<T> implements Publisher<T> {
+public class ArrayPublisher<T> extends Flow<T> {
 
     private final T[] array;
 
