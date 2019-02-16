@@ -1,6 +1,7 @@
 package org.test.app.service;
 
 import lombok.RequiredArgsConstructor;
+import org.reactivestreams.Publisher;
 import org.test.app.model.Currency;
 import org.test.app.model.CurrencyGroupedOrder;
 import org.test.app.model.OrderRequest;
@@ -8,7 +9,10 @@ import org.test.app.model.OrderRequestInOneCurrency;
 import org.test.app.model.OrderTotal;
 import org.test.app.model.OrderTotalWithDiscount;
 import org.test.app.model.ProductPackage;
+import org.test.reactive.ArrayPublisher;
+import org.test.reactive.FilterPublisher;
 import org.test.reactive.Flow;
+import org.test.reactive.MapPublisher;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +45,7 @@ public class OrderProcessingService {
         );
     }
 
+    // No filtering
     public Function<OrderRequest, OrderTotalWithDiscount> functionalProcessingPipeline() {
         return Function.<OrderRequest>identity()
             .andThen(this::toCurrencyGroupedOrder)
@@ -51,16 +56,40 @@ public class OrderProcessingService {
 
     public Stream<OrderTotalWithDiscount> streamProcessingPipeline(Stream<OrderRequest> orderRequestStream) {
         return orderRequestStream
-            .filter(orderRequest -> !orderRequest.getProducts().isEmpty())
+            .filter(this::isValidOrder)
             .map(this::toCurrencyGroupedOrder)
             .map(this::toOneCurrencyOrder)
             .map(this::toOrderTotal)
             .map(this::applyDiscount);
     }
 
+    private boolean isValidOrder(OrderRequest orderRequest) {
+        return !orderRequest.getProducts().isEmpty();
+    }
+
+    public Publisher<OrderTotalWithDiscount> publisherProcessingPipeline(OrderRequest[] requests) {
+        return
+            new MapPublisher<>(
+                new MapPublisher<>(
+                    new MapPublisher<>(
+                        new MapPublisher<>(
+                            new FilterPublisher<>(
+                                new ArrayPublisher<>(requests),
+                                this::isValidOrder
+                            ),
+                            this::toCurrencyGroupedOrder
+                        ),
+                        this::toOneCurrencyOrder
+                    ),
+                    this::toOrderTotal
+                ),
+                this::applyDiscount
+            );
+    }
+
     public Flow<OrderTotalWithDiscount> flowProcessingPipelineNotFused(Flow<OrderRequest> flow) {
         return flow
-            .filter(orderRequest -> !orderRequest.getProducts().isEmpty())
+            .filter(this::isValidOrder)
             .map(this::toCurrencyGroupedOrder)
             .map(this::toOneCurrencyOrder)
             .map(this::toOrderTotal)
@@ -69,7 +98,7 @@ public class OrderProcessingService {
 
     public Flow<OrderTotalWithDiscount> flowProcessingPipelineFused(Flow<OrderRequest> flow) {
         return flow
-            .filter(orderRequest -> !orderRequest.getProducts().isEmpty())
+            .filter(this::isValidOrder)
             .map(this::imperativeProcessingPipeline);
     }
 

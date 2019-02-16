@@ -13,6 +13,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;
+import org.reactivestreams.Publisher;
 import org.test.app.model.OrderRequest;
 import org.test.app.model.OrderTotalWithDiscount;
 import org.test.app.model.Product;
@@ -41,6 +42,7 @@ public class FlowFusedNotFusedPerfTest {
     @Param({ "5" })
     public int times;
 
+    Publisher<OrderTotalWithDiscount> decorator;
     Flow<OrderTotalWithDiscount> notFused;
     Flow<OrderTotalWithDiscount> fused;
 
@@ -55,6 +57,7 @@ public class FlowFusedNotFusedPerfTest {
         CurrencyService currencyService = new CurrencyService();
         OrderProcessingService processingService = new OrderProcessingService(currencyService);
 
+        decorator = processingService.publisherProcessingPipeline(dataToProcess);
         notFused = processingService.flowProcessingPipelineNotFused(Flow.fromArray(dataToProcess));
         fused = processingService.flowProcessingPipelineFused(Flow.fromArray(dataToProcess));
 
@@ -82,14 +85,21 @@ public class FlowFusedNotFusedPerfTest {
 
     // --- Order Processing ----------------------------------------------------
 
-    //@Benchmark
+    @Benchmark
+    public Object decorator(Blackhole bh) {
+        PerfSubscriber lo = new PerfSubscriber(bh);
+        decorator.subscribe(lo);
+        return lo;
+    }
+
+    @Benchmark
     public Object notFused(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);
         notFused.subscribe(lo);
         return lo;
     }
 
-    //@Benchmark
+    @Benchmark
     public Object fused(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);
         fused.subscribe(lo);
@@ -98,14 +108,14 @@ public class FlowFusedNotFusedPerfTest {
 
     // --- Integers ------------------------------------------------------------
 
-    @Benchmark
+    //@Benchmark
     public Object fusedInteger(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);
         simpleFused.subscribe(lo);
         return lo;
     }
 
-    @Benchmark
+    //@Benchmark
     public Object notFusedInteger(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);
         simpleNotFused.subscribe(lo);
