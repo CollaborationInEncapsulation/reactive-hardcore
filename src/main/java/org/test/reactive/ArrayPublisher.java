@@ -124,9 +124,8 @@ public class ArrayPublisher<T> extends Flow<T> {
                     if (n == 0) {
                         return;
                     }
+                    sent = 0;
                 }
-
-                sent = 0;
             }
         }
 
