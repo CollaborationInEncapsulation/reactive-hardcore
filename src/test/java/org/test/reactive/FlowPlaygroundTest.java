@@ -33,6 +33,7 @@ public class FlowPlaygroundTest {
         Flow.fromPublisher(externalPublisher)
             .filter(i -> i % 5 == 0)
             .map(i -> "[" + i + "]")
+            .take(10)
             .subscribe(n -> System.out.println(Thread.currentThread().getName() + " | onNext: " + n));
 
         Thread.sleep(1000);

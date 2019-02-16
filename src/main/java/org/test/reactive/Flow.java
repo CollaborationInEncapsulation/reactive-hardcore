@@ -8,7 +8,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * A simple reactive type with a primitive DSL, similar to Reactor's Flux type.
+ * A simple reactive type with a primitive DSL, similar to Reactor'subscription Flux type.
  *
  * @param <T> type of elements in stream
  */
@@ -32,6 +32,11 @@ public abstract class Flow<T> implements Publisher<T> {
 
     public <R> Flow<R> map(Function<T, R> mapper) {
         return new MapPublisher<>(this, mapper);
+    }
+
+
+    public Flow<T> take(long n) {
+        return new TakePublisher<>(this, n);
     }
 
     // --- Subscribing to Events -----------------------------------------------

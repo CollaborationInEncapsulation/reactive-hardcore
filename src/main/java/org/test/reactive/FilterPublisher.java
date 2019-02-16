@@ -8,7 +8,7 @@ import java.util.function.Predicate;
 
 public class FilterPublisher<T> extends Flow<T> {
 
-    private final Publisher<T>      parent;
+    private final Publisher<T> parent;
     private final Predicate<T> filter;
 
     public FilterPublisher(Publisher<T> parent, Predicate<T> filter) {
@@ -59,7 +59,7 @@ public class FilterPublisher<T> extends Flow<T> {
             try {
                  valid = filter.test(t);
             } catch (Exception ex) {
-                //s.cancel();
+                subscription.cancel();
                 onError(ex);
                 return;
             }
