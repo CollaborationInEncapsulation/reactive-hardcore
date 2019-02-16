@@ -27,7 +27,7 @@ public class PublishOnPublisherTest extends PublisherVerification<Long> {
 
     @Override
     public Publisher<Long> createPublisher(long elements) {
-        return new PublishOnPublisher<>(new ArrayPublisher<>(generate(elements)), 16);
+        return new PublishOnPublisher<>(new ArrayPublisher<>(generate(elements)), "t-1", 16);
     }
 
     @Override

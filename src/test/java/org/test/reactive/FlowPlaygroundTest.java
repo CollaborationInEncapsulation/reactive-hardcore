@@ -34,7 +34,10 @@ public class FlowPlaygroundTest {
             .filter(i -> i % 5 == 0)
             .map(i -> "[" + i + "]")
             .take(10)
-            .subscribe(n -> System.out.println(Thread.currentThread().getName() + " | onNext: " + n));
+            .publishOn("t-2", 100)
+            .subscribe(
+                n -> System.out.println(Thread.currentThread().getName() + " | onNext: " + n),
+                e -> e.printStackTrace());
 
         Thread.sleep(1000);
     }
@@ -60,6 +63,21 @@ public class FlowPlaygroundTest {
                 },
                 () -> System.out.println("onComplete"),
                 subscription -> subscription.request(1)
+            );
+
+        Thread.sleep(1000);
+    }
+
+    @Test
+    public void checkPublishOn() throws InterruptedException {
+        Flow.fromArray(new Integer[]{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 })
+            .map(i -> i + 1)
+            .publishOn("t-1", 100)
+            .map(i -> "[" + i + "]")
+            .subscribe(
+                s -> System.out.println(Thread.currentThread().getName() + " | onNext: " + s),
+                e -> System.out.println("onError: " + e.getMessage()),
+                () -> System.out.println("onComplete")
             );
 
         Thread.sleep(1000);

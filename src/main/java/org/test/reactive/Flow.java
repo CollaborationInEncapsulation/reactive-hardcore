@@ -34,9 +34,12 @@ public abstract class Flow<T> implements Publisher<T> {
         return new MapPublisher<>(this, mapper);
     }
 
-
     public Flow<T> take(long n) {
         return new TakePublisher<>(this, n);
+    }
+
+    public Flow<T> publishOn(String threadName, int prefetch) {
+        return new PublishOnPublisher<>(this, threadName, prefetch);
     }
 
     // --- Subscribing to Events -----------------------------------------------

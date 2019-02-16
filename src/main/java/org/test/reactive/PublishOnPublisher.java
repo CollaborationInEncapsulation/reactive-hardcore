@@ -1,5 +1,9 @@
 package org.test.reactive;
 
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -7,33 +11,34 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-
 /**
- * Create Publisher that sends elements of a given queue to each new subscriber
- * <p>
- * Acceptance Criteria: As a developer
- * I want to subscribe to the ArrayPublisher
- * So by doing that, receive elements of that publisher
- *
- * @param <T>
+ * TODO: Scheduler clean-up
  */
-public class PublishOnPublisher<T> implements Publisher<T> {
+public class PublishOnPublisher<T> extends Flow<T> {
 
     private final Publisher<T> parent;
     private final int prefetch;
+    private final String threadName;
 
-    public PublishOnPublisher(Publisher<T> parent, int prefetch) {
+    public PublishOnPublisher(Publisher<T> parent, String threadName, int prefetch) {
 
         this.parent = parent;
         this.prefetch = prefetch;
+        this.threadName = threadName;
     }
 
     @Override
     public void subscribe(Subscriber<? super T> subscriber) {
-        parent.subscribe(new PublishOnSubscription<>(new ConcurrentLinkedQueue<>(), subscriber, Executors.newSingleThreadExecutor(), prefetch));
+        parent.subscribe(new PublishOnSubscription<>(
+            new ConcurrentLinkedQueue<>(),
+            subscriber,
+            Executors.newSingleThreadExecutor(r -> {
+                Thread thread = new Thread(r);
+                thread.setName(threadName);
+                thread.setDaemon(true);
+                return thread;
+            }),
+            prefetch));
     }
 
     private static class PublishOnSubscription<T> implements Subscriber<T>,
@@ -63,8 +68,8 @@ public class PublishOnPublisher<T> implements Publisher<T> {
             AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscription.class, "wip");
 
         public PublishOnSubscription(Queue<T> queue,
-            Subscriber<? super T> subscriber,
-            ExecutorService executorService, int prefetch) {
+                                     Subscriber<? super T> subscriber,
+                                     ExecutorService executorService, int prefetch) {
             this.queue = queue;
             this.subscriber = subscriber;
             this.executorService = executorService;
@@ -192,7 +197,9 @@ public class PublishOnPublisher<T> implements Publisher<T> {
 
                     if (empty) {
                         REQUESTED.addAndGet(this, -sent);
-                        subscription.request(sent);
+                        if (sent > 0) {
+                            subscription.request(sent);
+                        }
                         sent = 0;
                         break;
                     }
@@ -202,7 +209,9 @@ public class PublishOnPublisher<T> implements Publisher<T> {
                     if (n == sent) {
                         n = REQUESTED.addAndGet(this, -sent);
                         if (n == 0) {
-                            subscription.request(n);
+                            if (sent > 0) {
+                                subscription.request(sent);
+                            }
                             break;
                         }
                         sent = 0;
