@@ -1,11 +1,5 @@
 package org.test.reactive;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.LongStream;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -13,6 +7,12 @@ import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.LongStream;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.ForkJoinPool.commonPool;
@@ -27,7 +27,7 @@ public class PublishOnPublisherTest extends PublisherVerification<Long> {
 
     @Override
     public Publisher<Long> createPublisher(long elements) {
-        return new PublishOnPublisher<>(new ArrayPublisher<>(generate(elements)), "t-1", 16);
+        return new PublishOnPublisher<>(new ArrayPublisher<>(generate(elements)), "th-1", 16);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class PublishOnPublisherTest extends PublisherVerification<Long> {
         Long[] array = generate(toRequest);
         ArrayPublisher<Long> publisher = new ArrayPublisher<>(array);
 
-        publisher.subscribe(new Subscriber<Long>() {
+        publisher.subscribe(new Subscriber<>() {
             @Override
             public void onSubscribe(Subscription s) {
                 order.add(0);
@@ -135,7 +135,7 @@ public class PublishOnPublisherTest extends PublisherVerification<Long> {
         AtomicReference<Throwable> error = new AtomicReference<>();
         ArrayPublisher<Long> publisher = new ArrayPublisher<>(array);
 
-        publisher.subscribe(new Subscriber<Long>() {
+        publisher.subscribe(new Subscriber<>() {
             @Override
             public void onSubscribe(Subscription s) {
                 s.request(4);
@@ -246,7 +246,7 @@ public class PublishOnPublisherTest extends PublisherVerification<Long> {
         Long[] array = generate(n);
         ArrayPublisher<Long> publisher = new ArrayPublisher<>(array);
 
-        publisher.subscribe(new Subscriber<Long>() {
+        publisher.subscribe(new Subscriber<>() {
             private Subscription s;
 
             @Override

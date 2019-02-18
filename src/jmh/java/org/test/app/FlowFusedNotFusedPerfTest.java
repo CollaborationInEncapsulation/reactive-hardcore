@@ -13,58 +13,38 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;
-import org.reactivestreams.Publisher;
-import org.test.app.model.OrderRequest;
-import org.test.app.model.OrderTotalWithDiscount;
-import org.test.app.model.Product;
-import org.test.app.model.ProductPackage;
-import org.test.app.service.CurrencyService;
-import org.test.app.service.OrderProcessingService;
 import org.test.reactive.Flow;
 import org.test.reactive.PerfSubscriber;
+import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.Arrays.asList;
-import static org.test.app.model.Currency.CAD;
-import static org.test.app.model.Currency.EUR;
-import static org.test.app.model.Currency.UAH;
-
 @BenchmarkMode(Mode.Throughput)
-@Warmup(iterations = 3)
-@Measurement(iterations = 4, time = 4, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = 5)
+@Measurement(iterations = 5, time = 5, timeUnit = TimeUnit.SECONDS)
 @OutputTimeUnit(TimeUnit.SECONDS)
-@Fork(value = 1)
+@Fork(value = 2)
 @State(Scope.Thread)
 public class FlowFusedNotFusedPerfTest {
     @Param({ "5" })
     public int times;
 
-    Publisher<OrderTotalWithDiscount> decorator;
-    Flow<OrderTotalWithDiscount> notFused;
-    Flow<OrderTotalWithDiscount> fused;
+    Flow<String> flowNotFused;
+    Flow<String> flowFused;
+    Flow<String> flowManuallyOptimized;
 
-    Flow<String> simpleNotFused;
-    Flow<String> simpleFused;
+    Flux<String> fluxNotFused;
+    Flux<String> fluxFused;
+    Flux<String> fluxManuallyOptimized;
 
     @Setup
     public void setup() {
-        OrderRequest[] dataToProcess = new OrderRequest[times];
-        Arrays.fill(dataToProcess, genOrderRequest());
-
-        CurrencyService currencyService = new CurrencyService();
-        OrderProcessingService processingService = new OrderProcessingService(currencyService);
-
-        decorator = processingService.publisherProcessingPipeline(dataToProcess);
-        notFused = processingService.flowProcessingPipelineNotFused(Flow.fromArray(dataToProcess));
-        fused = processingService.flowProcessingPipelineFused(Flow.fromArray(dataToProcess));
-
         Integer[] array = new Integer[times];
         Arrays.fill(array, 777);
 
-        simpleNotFused = Flow.fromArray(array)
+        flowNotFused = Flow.fromArray(array)
             .filter(i -> i != 500)
             .map(i -> i.toString())
             .map(s -> Integer.parseInt(s) + 1)
@@ -72,7 +52,7 @@ public class FlowFusedNotFusedPerfTest {
             .map(s -> Integer.parseInt(s) + 3)
             .map(i -> "[" + i + "]");
 
-        simpleFused = Flow.fromArray(array)
+        flowFused = Flow.fromArray(array)
             .filter(i -> i != 500)
             .map(i -> {
                 String s1 = i.toString();
@@ -81,57 +61,76 @@ public class FlowFusedNotFusedPerfTest {
                 Integer i2 = Integer.parseInt(s2) + 3;
                 return "[" + i2 + "]";
             });
-    }
 
-    // --- Order Processing ----------------------------------------------------
+        flowManuallyOptimized = Flow.fromArray(array)
+            .filter(i -> i != 500)
+            .map(i -> "[" + (i + 4) + "]");
 
-    @Benchmark
-    public Object decorator(Blackhole bh) {
-        PerfSubscriber lo = new PerfSubscriber(bh);
-        decorator.subscribe(lo);
-        return lo;
-    }
+        fluxNotFused = Flux.fromArray(array)
+            .filter(i -> i != 500)
+            .map(i -> i.toString())
+            .map(s -> Integer.parseInt(s) + 1)
+            .map(i -> i.toString())
+            .map(s -> Integer.parseInt(s) + 3)
+            .map(i -> "[" + i + "]");
 
-    @Benchmark
-    public Object notFused(Blackhole bh) {
-        PerfSubscriber lo = new PerfSubscriber(bh);
-        notFused.subscribe(lo);
-        return lo;
-    }
+        fluxFused = Flux.fromArray(array)
+            .filter(i -> i != 500)
+            .map(i -> {
+                String s1 = i.toString();
+                Integer i1 = Integer.parseInt(s1) + 1;
+                String s2 = i1.toString();
+                Integer i2 = Integer.parseInt(s2) + 3;
+                return "[" + i2 + "]";
+            });
 
-    @Benchmark
-    public Object fused(Blackhole bh) {
-        PerfSubscriber lo = new PerfSubscriber(bh);
-        fused.subscribe(lo);
-        return lo;
+        fluxManuallyOptimized = Flux.fromArray(array)
+            .filter(i -> i != 500)
+            .map(i -> "[" + (i + 4) + "]");
     }
 
     // --- Integers ------------------------------------------------------------
 
-    //@Benchmark
-    public Object fusedInteger(Blackhole bh) {
+    @Benchmark
+    public Object flowFusedInteger(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);
-        simpleFused.subscribe(lo);
+        flowFused.subscribe(lo);
         return lo;
     }
 
-    //@Benchmark
-    public Object notFusedInteger(Blackhole bh) {
+    @Benchmark
+    public Object flowNotFusedInteger(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);
-        simpleNotFused.subscribe(lo);
+        flowNotFused.subscribe(lo);
         return lo;
     }
 
-    private OrderRequest genOrderRequest() {
-        return new OrderRequest(
-            "order-1",
-            asList(
-                new ProductPackage(new Product("p-1", "Milk 1L", UAH, 25.00), 2),
-                new ProductPackage(new Product("p-2", "Bread", CAD, 1.31), 2),
-                new ProductPackage(new Product("p-3", "Butter Selianske", EUR, 2.00), 1)
-            ),
-            UAH
-        );
+    @Benchmark
+    public Object flowManuallyOptimized(Blackhole bh) {
+        PerfSubscriber lo = new PerfSubscriber(bh);
+        flowManuallyOptimized.subscribe(lo);
+        return lo;
+    }
+
+    @Benchmark
+    public Object fluxFusedInteger(Blackhole bh) {
+        PerfSubscriber lo = new PerfSubscriber(bh);
+        fluxFused.subscribe(lo);
+        return lo;
+    }
+
+    @Benchmark
+    public Object fluxNotFusedInteger(Blackhole bh) {
+        PerfSubscriber lo = new PerfSubscriber(bh);
+        fluxNotFused.subscribe(lo);
+        return lo;
+    }
+
+    @Benchmark
+    public Object fluxManuallyOptimized(Blackhole bh) {
+        PerfSubscriber lo = new PerfSubscriber(bh);
+        fluxManuallyOptimized.subscribe(lo);
+        return lo;
     }
 
     public static void main(String[] args) throws IOException, RunnerException {

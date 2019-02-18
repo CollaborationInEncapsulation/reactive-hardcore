@@ -1,12 +1,5 @@
 package org.test.reactive;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-
-import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
@@ -20,8 +13,11 @@ import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.EmitterProcessor;
-import reactor.core.publisher.Flux;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 3)
@@ -60,7 +56,7 @@ public class ArrayPublisherPerfTest {
         );
     }
 
-    @Benchmark
+    //@Benchmark
     public Object unoptimizedPublisherPerformance(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);
 
@@ -69,7 +65,7 @@ public class ArrayPublisherPerfTest {
         return lo;
     }
 
-    @Benchmark
+    //@Benchmark
     public Object nonThreadSafePublisherPerformance(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);
 
@@ -78,7 +74,7 @@ public class ArrayPublisherPerfTest {
         return lo;
     }
 
-    @Benchmark
+    //@Benchmark
     public Object wrappedPublisherPerformance(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);
 
@@ -87,7 +83,7 @@ public class ArrayPublisherPerfTest {
         return lo;
     }
 
-    @Benchmark
+    //@Benchmark
     public Object publisherPerformance(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);
 

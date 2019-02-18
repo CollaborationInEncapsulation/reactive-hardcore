@@ -12,7 +12,13 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 /**
- * TODO: Scheduler clean-up
+ * Create Publisher that sends elements of a given array to each new subscriber
+ * <p>
+ * Acceptance Criteria: As a developer
+ * I want to subscribe to the ArrayPublisher
+ * So by doing that, receive elements of that publisher
+ *
+ * @param <T>
  */
 public class PublishOnPublisher<T> extends Flow<T> {
 
@@ -21,7 +27,6 @@ public class PublishOnPublisher<T> extends Flow<T> {
     private final String threadName;
 
     public PublishOnPublisher(Publisher<T> parent, String threadName, int prefetch) {
-
         this.parent = parent;
         this.prefetch = prefetch;
         this.threadName = threadName;
@@ -29,105 +34,52 @@ public class PublishOnPublisher<T> extends Flow<T> {
 
     @Override
     public void subscribe(Subscriber<? super T> subscriber) {
-        parent.subscribe(new PublishOnSubscription<>(
+        parent.subscribe(new PublishOnInner<>(
+            Executors.newSingleThreadExecutor(
+                r -> {
+                    Thread thread = new Thread(r);
+                    thread.setName(threadName);
+                    thread.setDaemon(true);
+                    return thread;
+                }
+            ),
             new ConcurrentLinkedQueue<>(),
-            subscriber,
-            Executors.newSingleThreadExecutor(r -> {
-                Thread thread = new Thread(r);
-                thread.setName(threadName);
-                thread.setDaemon(true);
-                return thread;
-            }),
-            prefetch));
+            prefetch,
+            subscriber
+        ));
+
     }
 
-    private static class PublishOnSubscription<T> implements Subscriber<T>,
-                                                             Subscription, Runnable {
+    private static class PublishOnInner<T> implements Subscriber<T>, Subscription, Runnable {
 
-        private final Subscriber<? super T> subscriber;
-        private final Queue<T> queue;
         private final ExecutorService executorService;
+        private final Queue<T> queue;
         private final int prefetch;
 
-        Throwable throwable;
-
-        volatile boolean done;
+        private final Subscriber<? super T> subscriber;
 
         volatile boolean canceled;
 
-        Subscription subscription;
-
-
         volatile long requested;
-        static final AtomicLongFieldUpdater<PublishOnSubscription> REQUESTED =
-                AtomicLongFieldUpdater.newUpdater(PublishOnSubscription.class, "requested");
+        static final AtomicLongFieldUpdater<PublishOnInner> REQUESTED =
+                AtomicLongFieldUpdater.newUpdater(PublishOnInner.class, "requested");
 
 
         volatile int wip;
-        static final AtomicIntegerFieldUpdater<PublishOnSubscription> WIP =
-            AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscription.class, "wip");
+        static final AtomicIntegerFieldUpdater<PublishOnInner> WIP =
+            AtomicIntegerFieldUpdater.newUpdater(PublishOnInner.class, "wip");
 
-        public PublishOnSubscription(Queue<T> queue,
-                                     Subscriber<? super T> subscriber,
-                                     ExecutorService executorService, int prefetch) {
-            this.queue = queue;
-            this.subscriber = subscriber;
+        private volatile boolean done;
+        private Throwable throwable;
+        private Subscription subscription;
+
+        public PublishOnInner(ExecutorService executorService, Queue<T> queue, int prefetch, Subscriber<? super T> subscriber) {
             this.executorService = executorService;
+            this.queue = queue;
             this.prefetch = prefetch;
+            this.subscriber = subscriber;
         }
 
-        @Override
-        public void onSubscribe(Subscription s) {
-            this.subscription = s;
-
-            s.request(prefetch);
-            subscriber.onSubscribe(this);
-        }
-
-        @Override
-        public void onNext(T t) {
-            if (canceled) {
-                return;
-            }
-
-            queue.offer(t);
-
-            trySchedule();
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            if (canceled) {
-                return;
-            }
-
-            done = true;
-            throwable = t;
-            trySchedule();
-        }
-
-        @Override
-        public void onComplete() {
-            if (canceled) {
-                return;
-            }
-
-            done = true;
-        }
-
-
-        void trySchedule() {
-            if (WIP.getAndIncrement(this) > 0) {
-                return;
-            }
-
-            executorService.execute(this);
-        }
-
-        @Override
-        public void run() {
-            slowPath(requested);
-        }
 
         @Override
         public void request(long n) {
@@ -156,10 +108,23 @@ public class PublishOnPublisher<T> extends Flow<T> {
             trySchedule();
         }
 
-        void slowPath(long n) {
+        void trySchedule() {
+            if (WIP.getAndIncrement(this) > 0) {
+                return;
+            }
+
+            executorService.execute(this);
+        }
+
+        @Override
+        public void run() {
+            drainMyQueue(requested);
+        }
+
+        void drainMyQueue(long n) {
             int inProgress = 1;
             int sent = 0;
-            Queue<T> queue = this.queue;
+            Queue<T> q = queue;
             Subscriber<? super T> subscriber = this.subscriber;
 
             while (true) {
@@ -170,7 +135,7 @@ public class PublishOnPublisher<T> extends Flow<T> {
                             return;
                         }
 
-                        T element = queue.poll();
+                        T element = q.poll();
 
                         empty = element == null;
 
@@ -185,31 +150,29 @@ public class PublishOnPublisher<T> extends Flow<T> {
                         return;
                     }
 
-                    if (done && empty) {
+                    if (q.isEmpty() && done) {
                         if (throwable != null) {
                             subscriber.onError(throwable);
-                        }
-                        else {
+                        } else {
                             subscriber.onComplete();
                         }
                         return;
                     }
 
-                    if (empty) {
-                        REQUESTED.addAndGet(this, -sent);
-                        if (sent > 0) {
-                            subscription.request(sent);
-                        }
-                        sent = 0;
-                        break;
-                    }
-
                     n = requested;
+
+                    if (empty) {
+                        if (sent > 0) {
+                            REQUESTED.addAndGet(this, -sent);
+                            subscription.request(sent);
+                            break;
+                        }
+                    }
 
                     if (n == sent) {
                         n = REQUESTED.addAndGet(this, -sent);
                         if (n == 0) {
-                            if (sent > 0) {
+                            if(sent > 0) {
                                 subscription.request(sent);
                             }
                             break;
@@ -219,7 +182,6 @@ public class PublishOnPublisher<T> extends Flow<T> {
                 }
 
                 inProgress = WIP.addAndGet(this, -inProgress);
-
                 if (inProgress == 0) {
                     return;
                 }
@@ -228,13 +190,37 @@ public class PublishOnPublisher<T> extends Flow<T> {
 
         @Override
         public void cancel() {
-            if (!canceled) {
-                canceled = true;
+            canceled = true;
+            subscription.cancel();
+        }
 
-                if (WIP.getAndIncrement(this) == 0) {
-                    queue.clear();
-                }
-            }
+        @Override
+        public void onSubscribe(Subscription s) {
+            subscription = s;
+            s.request(prefetch);
+            subscriber.onSubscribe(this);
+        }
+
+        @Override
+        public void onNext(T t) {
+            queue.offer(t);
+
+            trySchedule();
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            throwable = t;
+            done = true;
+
+            trySchedule();
+        }
+
+        @Override
+        public void onComplete() {
+            done = true;
+
+            trySchedule();
         }
     }
 }
