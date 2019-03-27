@@ -7,13 +7,30 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
 
 import org.assertj.core.api.Assertions;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.reactivestreams.tck.PublisherVerification;
+import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class ArrayPublisherTest {
+public class ArrayPublisherTest extends PublisherVerification<Long> {
+
+    public ArrayPublisherTest() {
+        super(new TestEnvironment());
+    }
+
+    @Override
+    public Publisher<Long> createPublisher(long elements) {
+        return new ArrayPublisher<>(generate(elements));
+    }
+
+    @Override
+    public Publisher<Long> createFailedPublisher() {
+        return null;
+    }
 
     @Test
     public void signalsShouldBeEmittedInTheRightOrder() throws InterruptedException {
