@@ -66,6 +66,57 @@ public class ArrayPublisherTest {
         Assert.assertEquals(collected, Arrays.asList(array));
     }
 
+    @Test
+    public void mustSupportBackpressureControl() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        ArrayList<Long> collected = new ArrayList<>();
+        long toRequest = 5L;
+        Long[] array = generate(toRequest);
+        ArrayPublisher<Long> publisher = new ArrayPublisher<>(array);
+        Subscription[] subscription = new Subscription[1];
+
+        publisher.subscribe(new Subscriber<>() {
+            @Override
+            public void onSubscribe(Subscription s) {
+                subscription[0] = s;
+            }
+
+            @Override
+            public void onNext(Long aLong) {
+                collected.add(aLong);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+
+            }
+
+            @Override
+            public void onComplete() {
+                latch.countDown();
+            }
+        });
+
+
+        assertEquals(collected, Collections.emptyList());
+
+        subscription[0].request(1);
+        assertEquals(collected, asList(0L));
+
+        subscription[0].request(1);
+        assertEquals(collected, asList(0L, 1L));
+
+        subscription[0].request(2);
+        assertEquals(collected, asList(0L, 1L, 2L, 3L));
+
+        subscription[0].request(20);
+
+        latch.await(1, SECONDS);
+
+        assertEquals(collected, asList(array));
+    }
+
+
     static Long[] generate(long num) {
         return LongStream.range(0, num >= Integer.MAX_VALUE ? 1000000 : num)
                          .boxed()
