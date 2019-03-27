@@ -21,7 +21,21 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 
-public class ArrayPublisherTest {
+public class ArrayPublisherTest extends PublisherVerification<Long> {
+
+    public ArrayPublisherTest() {
+        super(new TestEnvironment());
+    }
+
+    @Override
+    public Publisher<Long> createPublisher(long elements) {
+        return new ArrayPublisher<>(generate(elements));
+    }
+
+    @Override
+    public Publisher<Long> createFailedPublisher() {
+        return null;
+    }
 
     @Test
     public void signalsShouldBeEmittedInTheRightOrder() throws InterruptedException {

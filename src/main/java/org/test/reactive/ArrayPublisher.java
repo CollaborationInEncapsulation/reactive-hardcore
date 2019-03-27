@@ -31,6 +31,13 @@ public class ArrayPublisher<T> implements Publisher<T> {
             @Override
             public void request(long n) {
 
+                if (n <= 0 && !cancelled) {
+                    cancel();
+                    subscriber.onError(new IllegalArgumentException(
+                        "§3.9 violated: positive request amount required but it was " + n));
+                    return;
+                }
+
                 // if requested > 0, then - someone works
                 long initialRequested = requested;
 
