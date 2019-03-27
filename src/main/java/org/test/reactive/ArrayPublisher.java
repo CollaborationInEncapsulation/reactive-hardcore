@@ -29,7 +29,14 @@ public class ArrayPublisher<T> implements Publisher<T> {
             @Override
             public void request(long n) {
                 for (int i = 0; i < n && index < array.length; i++, index++) {
-                    subscriber.onNext(array[index]);
+                    T element = array[index];
+
+                    if (element == null) {
+                        subscriber.onError(new NullPointerException());
+                        return;
+                    }
+
+                    subscriber.onNext(element);
                 }
 
                 if (index == array.length) {
