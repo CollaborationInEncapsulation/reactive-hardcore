@@ -26,6 +26,7 @@ public class ArrayPublisher<T> implements Publisher<T> {
         subscriber.onSubscribe(new Subscription() {
             int index;
             long requested;
+            boolean cancelled;
 
             @Override
             public void request(long n) {
@@ -42,6 +43,10 @@ public class ArrayPublisher<T> implements Publisher<T> {
                 int sent = 0;
 
                 for (; sent < requested && index < array.length; sent++, index++) {
+                    if (cancelled) {
+                        return;
+                    }
+
                     T element = array[index];
 
                     if (element == null) {
@@ -50,6 +55,10 @@ public class ArrayPublisher<T> implements Publisher<T> {
                     }
 
                     subscriber.onNext(element);
+                }
+
+                if (cancelled) {
+                    return;
                 }
 
                 if (index == array.length) {
@@ -62,7 +71,7 @@ public class ArrayPublisher<T> implements Publisher<T> {
 
             @Override
             public void cancel() {
-
+                cancelled = true;
             }
         });
     }

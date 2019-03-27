@@ -189,6 +189,43 @@ public class ArrayPublisherTest {
     	assertEquals(collected, asList(array));
     }
 
+    @Test
+    public void shouldBePossibleToCancelSubscription() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        ArrayList<Long> collected = new ArrayList<>();
+        long toRequest = 1000L;
+        Long[] array = generate(toRequest);
+        ArrayPublisher<Long> publisher = new ArrayPublisher<>(array);
+
+        publisher.subscribe(new Subscriber<>() {
+
+            @Override
+            public void onSubscribe(Subscription s) {
+                s.cancel();
+                s.request(toRequest);
+            }
+
+            @Override
+            public void onNext(Long aLong) {
+                collected.add(aLong);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+
+            }
+
+            @Override
+            public void onComplete() {
+                latch.countDown();
+            }
+        });
+
+        latch.await(1, SECONDS);
+
+        assertEquals(collected, Collections.emptyList());
+    }
+
 
     static Long[] generate(long num) {
         return LongStream.range(0, num >= Integer.MAX_VALUE ? 1000000 : num)
