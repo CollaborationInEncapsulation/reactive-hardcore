@@ -32,7 +32,7 @@ public final class PerfSubscriber implements Subscriber<Object> {
     @Override
     public void onSubscribe(Subscription subscription) {
         this.subscription = subscription;
-        subscription.request(1);
+        subscription.request(10);
     }
 
     @Override

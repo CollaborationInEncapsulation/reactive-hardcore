@@ -20,7 +20,7 @@ import org.openjdk.jmh.runner.RunnerException;
 
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 2)
-@Measurement(iterations = 3, time = 3, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Fork(value = 1)
 @State(Scope.Thread)
