@@ -19,6 +19,15 @@ import org.test.reactive.Flow;
 public class OrderProcessingService {
     private final CurrencyService currencyService;
 
+    public OrderTotalWithDiscount imperativeProcessing(OrderRequest orderRequest) {
+        CurrencyGroupedOrder currencyGroupedOrder = toCurrencyGroupedOrder(orderRequest);
+        OrderRequestInOneCurrency orderRequestInOneCurrency = toOneCurrencyOrder(currencyGroupedOrder);
+        OrderTotal orderTotal = toOrderTotal(orderRequestInOneCurrency);
+        OrderTotalWithDiscount orderTotalWithDiscount = applyDiscount(orderTotal);
+
+        return orderTotalWithDiscount;
+    }
+
     public Flow<OrderTotalWithDiscount> process(Flow<OrderRequest> orderRequestPublisher) {
         return orderRequestPublisher
             .map(this::toCurrencyGroupedOrder)
