@@ -77,6 +77,43 @@ public class ArrayPublisher<T> implements Publisher<T> {
                 return;
             }
 
+            if (n == Long.MAX_VALUE) {
+                fastPath();
+            }
+            else {
+                slowPath(n);
+            }
+        }
+
+        void fastPath() {
+            final Subscriber<? super T> s = subscriber;
+            final T[] arr = array;
+            int i = index;
+            int length = arr.length;
+
+            for (; i < length; i++) {
+                if (cancelled) {
+                    return;
+                }
+
+                T element = arr[i];
+
+                if (element == null) {
+                    s.onError(new NullPointerException());
+                    return;
+                }
+
+                s.onNext(element);
+            }
+
+            if (cancelled) {
+                return;
+            }
+
+            s.onComplete();
+        }
+
+        void slowPath(long n) {
             final Subscriber<? super T> s = subscriber;
             final T[] arr = array;
             int sent = 0;
