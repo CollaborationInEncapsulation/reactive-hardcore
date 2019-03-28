@@ -42,7 +42,22 @@ public class ArrayPublisher<T> implements Publisher<T> {
                     return;
                 }
 
-                long initialRequested = requested.getAndAdd(n);
+                long initialRequested;
+
+                do {
+                    initialRequested = requested.get();
+
+                    if (initialRequested == Long.MAX_VALUE) {
+                        return;
+                    }
+
+                    n = initialRequested + n;
+
+                    if (n <= 0) {
+                        n = Long.MAX_VALUE;
+                    }
+
+                } while (!requested.weakCompareAndSetVolatile(initialRequested, n));
 
                 if (initialRequested > 0) {
                     return;
