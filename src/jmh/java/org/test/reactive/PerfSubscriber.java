@@ -23,22 +23,18 @@ import org.reactivestreams.Subscription;
 public final class PerfSubscriber implements Subscriber<Object> {
     final  Blackhole      bh;
 
-    Subscription subscription;
-
     public PerfSubscriber(Blackhole bh) {
         this.bh = bh;
     }
 
     @Override
     public void onSubscribe(Subscription subscription) {
-        this.subscription = subscription;
-        subscription.request(10);
+        subscription.request(Long.MAX_VALUE);
     }
 
     @Override
     public void onNext(Object item) {
         bh.consume(item);
-        subscription.request(1);
     }
 
     @Override
