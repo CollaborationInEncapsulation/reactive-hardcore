@@ -1,7 +1,6 @@
 package org.test.reactive;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -26,87 +25,103 @@ public class ArrayPublisher<T> implements Publisher<T> {
 
     @Override
     public void subscribe(Subscriber<? super T> subscriber) {
-        subscriber.onSubscribe(new Subscription() {
-            int index;
-            AtomicLong requested = new AtomicLong();
-            AtomicBoolean cancelled = new AtomicBoolean();
+        subscriber.onSubscribe(new ArraySubscription<T>(array, subscriber));
+    }
 
-            @Override
-            public void request(long n) {
-                if (n <= 0 && !cancelled.get()) {
-                    cancel();
-                    subscriber.onError(new IllegalArgumentException(
-                        "§3.9 violated: positive request amount required but it was " + n
-                    ));
+    private static class ArraySubscription<T> implements Subscription {
+
+        final T[] array;
+        final Subscriber<? super T> subscriber;
+
+        int index;
+
+        volatile long requested;
+        static final AtomicLongFieldUpdater<ArraySubscription> REQUESTED =
+            AtomicLongFieldUpdater.newUpdater(ArraySubscription.class, "requested");
+
+        volatile boolean cancelled;
+
+        public ArraySubscription(T[] array, Subscriber<? super T> subscriber) {
+            this.array = array;
+            this.subscriber = subscriber;
+        }
+
+        @Override
+        public void request(long n) {
+            if (n <= 0 && !cancelled) {
+                cancel();
+                subscriber.onError(new IllegalArgumentException(
+                    "§3.9 violated: positive request amount required but it was " + n
+                ));
+                return;
+            }
+
+            long initialRequested;
+
+            do {
+                initialRequested = requested;
+
+                if (initialRequested == Long.MAX_VALUE) {
                     return;
                 }
 
-                long initialRequested;
+                n = initialRequested + n;
 
-                do {
-                    initialRequested = requested.get();
+                if (n <= 0) {
+                    n = Long.MAX_VALUE;
+                }
 
-                    if (initialRequested == Long.MAX_VALUE) {
+            } while (!REQUESTED.compareAndSet(this, initialRequested, n));
+
+            if (initialRequested > 0) {
+                return;
+            }
+
+            final Subscriber<? super T> s = subscriber;
+            final T[] arr = array;
+            int sent = 0;
+            int i = index;
+            int length = arr.length;
+
+            while (true) {
+                for (; sent < n && i < length; sent++, i++) {
+                    if (cancelled) {
                         return;
                     }
 
-                    n = initialRequested + n;
+                    T element = arr[i];
 
-                    if (n <= 0) {
-                        n = Long.MAX_VALUE;
+                    if (element == null) {
+                        s.onError(new NullPointerException());
+                        return;
                     }
 
-                } while (!requested.compareAndSet(initialRequested, n));
+                    s.onNext(element);
+                }
 
-                if (initialRequested > 0) {
+                if (cancelled) {
                     return;
                 }
 
-                final T[] arr = ArrayPublisher.this.array;
-                int sent = 0;
-                int i = index;
-                int length = arr.length;
+                if (i == length) {
+                    s.onComplete();
+                    return;
+                }
 
-                while (true) {
-                    for (; sent < n && i < length; sent++, i++) {
-                        if (cancelled.get()) {
-                            return;
-                        }
-
-                        T element = arr[i];
-
-                        if (element == null) {
-                            subscriber.onError(new NullPointerException());
-                            return;
-                        }
-
-                        subscriber.onNext(element);
-                    }
-
-                    if (cancelled.get()) {
+                n = requested;
+                if (n == sent) {
+                    index = i;
+                    if (REQUESTED.addAndGet(this, -sent) == 0) {
                         return;
                     }
-
-                    if (i == length) {
-                        subscriber.onComplete();
-                        return;
-                    }
-
-                    n = requested.get();
-                    if (n == sent) {
-                        index = i;
-                        if (requested.addAndGet(-sent) == 0) {
-                            return;
-                        }
-                        sent = 0;
-                    }
+                    sent = 0;
                 }
             }
+        }
 
-            @Override
-            public void cancel() {
-                cancelled.set(true);
-            }
-        });
+        @Override
+        public void cancel() {
+            cancelled = true;
+        }
     }
 }
