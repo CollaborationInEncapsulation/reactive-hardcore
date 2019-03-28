@@ -18,6 +18,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.ForkJoinPool.commonPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 
@@ -74,10 +75,10 @@ public class ArrayPublisherTest extends PublisherVerification<Long> {
             }
         });
 
-        latch.await(1, TimeUnit.SECONDS);
+        latch.await(1, SECONDS);
 
-        Assert.assertEquals(order, Arrays.asList(0, 1, 2));
-        Assert.assertEquals(collected, Arrays.asList(array));
+        assertEquals(order, asList(0, 1, 2));
+        assertEquals(collected, asList(array));
     }
 
     @Test
@@ -238,6 +239,46 @@ public class ArrayPublisherTest extends PublisherVerification<Long> {
         latch.await(1, SECONDS);
 
         assertEquals(collected, Collections.emptyList());
+    }
+
+    @Test
+    public void multithreadingTest() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        ArrayList<Long> collected = new ArrayList<>();
+        final int n = 5000;
+        Long[] array = generate(n);
+        ArrayPublisher<Long> publisher = new ArrayPublisher<>(array);
+
+        publisher.subscribe(new Subscriber<>() {
+            private Subscription s;
+
+            @Override
+            public void onSubscribe(Subscription s) {
+                this.s = s;
+                for (int i = 0; i < n; i++) {
+                    commonPool().execute(() -> s.request(1));
+                }
+            }
+
+            @Override
+            public void onNext(Long aLong) {
+                collected.add(aLong);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+
+            }
+
+            @Override
+            public void onComplete() {
+                latch.countDown();
+            }
+        });
+
+        latch.await(2, SECONDS);
+
+        assertEquals(collected, asList(array));
     }
 
 
