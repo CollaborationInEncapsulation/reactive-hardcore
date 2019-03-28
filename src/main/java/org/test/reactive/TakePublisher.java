@@ -4,7 +4,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public class TakePublisher<T> implements Publisher<T> {
+public class TakePublisher<T> extends Flow<T> {
 
     final Publisher<? extends T> source;
 
