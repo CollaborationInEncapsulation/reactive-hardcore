@@ -10,6 +10,7 @@ import org.test.app.model.ProductPackage;
 import org.test.app.service.CurrencyService;
 import org.test.app.service.OrderProcessingService;
 import org.test.reactive.ArrayPublisher;
+import org.test.reactive.Flow;
 
 import static java.util.Arrays.asList;
 import static org.test.app.model.Currency.CAD;
@@ -32,8 +33,8 @@ public class Application {
             UAH
         );
 
-        Publisher<OrderTotalWithDiscount> resultPublisher = processingService
-            .process(new ArrayPublisher<>(new OrderRequest[] {order, order}));
+        Flow<OrderTotalWithDiscount> resultPublisher = processingService
+            .process(Flow.just(order, order));
 
         resultPublisher.subscribe(new Subscriber<OrderTotalWithDiscount>() {
 

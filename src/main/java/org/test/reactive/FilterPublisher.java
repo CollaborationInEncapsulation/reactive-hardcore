@@ -6,7 +6,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public class FilterPublisher<T> implements Publisher<T> {
+public class FilterPublisher<T> extends Flow<T> {
 
     final Publisher<? extends T> source;
     final Predicate<? super T> filter;

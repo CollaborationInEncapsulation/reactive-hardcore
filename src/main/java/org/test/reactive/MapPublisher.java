@@ -7,7 +7,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public class MapPublisher<T, R> implements Publisher<R> {
+public class MapPublisher<T, R> extends Flow<R> {
 
     final Publisher<? extends T> source;
     final Function<? super T, ? extends R> mapper;

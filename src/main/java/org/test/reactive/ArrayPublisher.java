@@ -15,7 +15,7 @@ import org.reactivestreams.Subscription;
  *
  * @param <T>
  */
-public class ArrayPublisher<T> implements Publisher<T> {
+public class ArrayPublisher<T> extends Flow<T> {
 
     private final T[] array;
 
