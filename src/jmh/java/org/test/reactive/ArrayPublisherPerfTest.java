@@ -25,7 +25,7 @@ import org.openjdk.jmh.runner.RunnerException;
 @Fork(value = 1)
 @State(Scope.Thread)
 public class ArrayPublisherPerfTest {
-    @Param({ "1000000" })
+    @Param({ "10", "1000000" })
     public int times;
 
     UnoptimizedArrayPublisher<Integer> unoptimizedArrayPublisher;
