@@ -1,11 +1,15 @@
 package org.test.app;
 
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import org.test.app.model.OrderRequest;
 import org.test.app.model.OrderTotalWithDiscount;
 import org.test.app.model.Product;
 import org.test.app.model.ProductPackage;
 import org.test.app.service.CurrencyService;
 import org.test.app.service.OrderProcessingService;
+import org.test.reactive.ArrayPublisher;
 
 import static java.util.Arrays.asList;
 import static org.test.app.model.Currency.CAD;
@@ -28,9 +32,34 @@ public class Application {
             UAH
         );
 
-        OrderTotalWithDiscount result = processingService
-            .process(order);
+        Publisher<OrderTotalWithDiscount> resultPublisher = processingService
+            .process(new ArrayPublisher<>(new OrderRequest[] {order, order}));
 
-        System.out.println("Order with discount: \n" + result);
+        resultPublisher.subscribe(new Subscriber<OrderTotalWithDiscount>() {
+
+            Subscription s;
+
+            @Override
+            public void onSubscribe(Subscription s) {
+                this.s = s;
+                s.request(1);
+            }
+
+            @Override
+            public void onNext(OrderTotalWithDiscount result) {
+                System.out.println("Order with discount: \n" + result);
+                s.request(1);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                s = null;
+            }
+
+            @Override
+            public void onComplete() {
+                s = null;
+            }
+        });
     }
 }

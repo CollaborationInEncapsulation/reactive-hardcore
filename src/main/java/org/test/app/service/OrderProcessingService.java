@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
+import org.reactivestreams.Publisher;
 import org.test.app.model.Currency;
 import org.test.app.model.CurrencyGroupedOrder;
 import org.test.app.model.OrderRequest;
@@ -13,19 +14,24 @@ import org.test.app.model.OrderRequestInOneCurrency;
 import org.test.app.model.OrderTotal;
 import org.test.app.model.OrderTotalWithDiscount;
 import org.test.app.model.ProductPackage;
+import org.test.reactive.MapPublisher;
 
 @RequiredArgsConstructor
 public class OrderProcessingService {
     private final CurrencyService currencyService;
 
-    public OrderTotalWithDiscount process(OrderRequest orderRequest) {
+    public Publisher<OrderTotalWithDiscount> process(Publisher<OrderRequest> orderRequestPublisher) {
 
-        CurrencyGroupedOrder currencyGroupedOrder = toCurrencyGroupedOrder(orderRequest);
-        OrderRequestInOneCurrency orderRequestInOneCurrency = toOneCurrencyOrder(currencyGroupedOrder);
-        OrderTotal orderTotal = toOrderTotal(orderRequestInOneCurrency);
-        OrderTotalWithDiscount orderTotalWithDiscount = applyDiscount(orderTotal);
-
-        return orderTotalWithDiscount;
+        return new MapPublisher<>(
+            new MapPublisher<>(
+                new MapPublisher<>(
+                    new MapPublisher<>(orderRequestPublisher, this::toCurrencyGroupedOrder),
+                    this::toOneCurrencyOrder
+                ),
+                this::toOrderTotal
+            ),
+            this::applyDiscount
+        );
     }
 
     // --- Processing steps ----------------------------------------------------
