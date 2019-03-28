@@ -62,15 +62,18 @@ public class ArrayPublisher<T> implements Publisher<T> {
                     return;
                 }
 
+                final T[] arr = ArrayPublisher.this.array;
                 int sent = 0;
+                int i = index;
+                int length = arr.length;
 
                 while (true) {
-                    for (; sent < requested.get() && index < array.length; sent++, index++) {
+                    for (; sent < n && i < length; sent++, i++) {
                         if (cancelled.get()) {
                             return;
                         }
 
-                        T element = array[index];
+                        T element = arr[i];
 
                         if (element == null) {
                             subscriber.onError(new NullPointerException());
@@ -84,15 +87,19 @@ public class ArrayPublisher<T> implements Publisher<T> {
                         return;
                     }
 
-                    if (index == array.length) {
+                    if (i == length) {
                         subscriber.onComplete();
                         return;
                     }
 
-                    if (requested.addAndGet(-sent) == 0) {
-                        return;
+                    n = requested.get();
+                    if (n == sent) {
+                        index = i;
+                        if (requested.addAndGet(-sent) == 0) {
+                            return;
+                        }
+                        sent = 0;
                     }
-                    sent = 0;
                 }
             }
 

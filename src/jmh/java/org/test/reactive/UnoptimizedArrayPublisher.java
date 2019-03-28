@@ -1,7 +1,6 @@
 package org.test.reactive;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Publisher;
@@ -19,13 +18,13 @@ public class UnoptimizedArrayPublisher<T> implements Publisher<T> {
     @Override
     public void subscribe(Subscriber<? super T> subscriber) {
         subscriber.onSubscribe(new Subscription() {
-            AtomicInteger index = new AtomicInteger();
+            int index;
             AtomicLong requested = new AtomicLong();
-            AtomicBoolean canceled = new AtomicBoolean();
+            AtomicBoolean cancelled = new AtomicBoolean();
 
             @Override
             public void request(long n) {
-                if (n <= 0 && !canceled.get()) {
+                if (n <= 0 && !cancelled.get()) {
                     cancel();
                     subscriber.onError(new IllegalArgumentException(
                         "§3.9 violated: positive request amount required but it was " + n
@@ -57,31 +56,26 @@ public class UnoptimizedArrayPublisher<T> implements Publisher<T> {
                 int sent = 0;
 
                 while (true) {
-
-                    for (;
-                         sent < requested.get() && index.get() < array.length;
-                         sent++, index.incrementAndGet()) {
-
-                        if (canceled.get()) {
+                    for (; sent < requested.get() && index < array.length; sent++, index++) {
+                        if (cancelled.get()) {
                             return;
                         }
 
-                        T nextElement = array[index.get()];
+                        T element = array[index];
 
-                        if (nextElement == null) {
+                        if (element == null) {
                             subscriber.onError(new NullPointerException());
-
                             return;
                         }
 
-                        subscriber.onNext(nextElement);
+                        subscriber.onNext(element);
                     }
 
-                    if (canceled.get()) {
+                    if (cancelled.get()) {
                         return;
                     }
 
-                    if (index.get() == array.length) {
+                    if (index == array.length) {
                         subscriber.onComplete();
                         return;
                     }
@@ -89,14 +83,13 @@ public class UnoptimizedArrayPublisher<T> implements Publisher<T> {
                     if (requested.addAndGet(-sent) == 0) {
                         return;
                     }
-
                     sent = 0;
                 }
             }
 
             @Override
             public void cancel() {
-                canceled.set(true);
+                cancelled.set(true);
             }
         });
     }
