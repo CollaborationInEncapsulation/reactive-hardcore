@@ -20,10 +20,10 @@ import org.openjdk.jmh.infra.Blackhole;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public final class PerfSubscriber implements Subscriber<Object> {
+public final class SlowPerfSubscriber implements Subscriber<Object> {
     final  Blackhole      bh;
 
-    public PerfSubscriber(Blackhole bh) {
+    public SlowPerfSubscriber(Blackhole bh) {
         this.bh = bh;
     }
 

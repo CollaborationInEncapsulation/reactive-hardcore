@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import lombok.RequiredArgsConstructor;
 import org.test.app.model.Currency;
@@ -14,10 +15,21 @@ import org.test.app.model.OrderTotal;
 import org.test.app.model.OrderTotalWithDiscount;
 import org.test.app.model.ProductPackage;
 import org.test.reactive.Flow;
+import reactor.core.publisher.Flux;
 
 @RequiredArgsConstructor
 public class OrderProcessingService {
     private final CurrencyService currencyService;
+
+
+    public OrderTotalWithDiscount synchronousFunctionalProcessing(OrderRequest orderRequest) {
+        return ((Function<OrderRequest,CurrencyGroupedOrder>)this::toCurrencyGroupedOrder)
+            .andThen(this::toOneCurrencyOrder)
+            .andThen(this::toOrderTotal)
+            .andThen(this::applyDiscount)
+            .apply(orderRequest);
+    }
+
 
     public OrderTotalWithDiscount imperativeProcessing(OrderRequest orderRequest) {
         CurrencyGroupedOrder currencyGroupedOrder = toCurrencyGroupedOrder(orderRequest);
@@ -28,7 +40,7 @@ public class OrderProcessingService {
         return orderTotalWithDiscount;
     }
 
-    public Flow<OrderTotalWithDiscount> process(Flow<OrderRequest> orderRequestPublisher) {
+    public Flux<OrderTotalWithDiscount> process(Flux<OrderRequest> orderRequestPublisher) {
         return orderRequestPublisher
             .map(this::toCurrencyGroupedOrder)
             .map(this::toOneCurrencyOrder)

@@ -17,17 +17,12 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;
-import org.test.app.model.CurrencyGroupedOrder;
 import org.test.app.model.OrderRequest;
-import org.test.app.model.OrderRequestInOneCurrency;
-import org.test.app.model.OrderTotal;
 import org.test.app.model.OrderTotalWithDiscount;
 import org.test.app.model.Product;
 import org.test.app.model.ProductPackage;
-import org.test.app.service.CurrencyService;
-import org.test.app.service.OrderProcessingService;
-import org.test.reactive.Flow;
-import org.test.reactive.PerfSubscriber;
+import org.test.reactive.FastPerfSubscriber;
+import reactor.core.publisher.Flux;
 
 import static java.util.Arrays.asList;
 import static org.test.app.model.Currency.CAD;
@@ -35,16 +30,16 @@ import static org.test.app.model.Currency.EUR;
 import static org.test.app.model.Currency.UAH;
 
 @BenchmarkMode(Mode.Throughput)
-@Warmup(iterations = 2)
-@Measurement(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = 5, time = 20)
+@Measurement(iterations = 10, time = 60)
 @OutputTimeUnit(TimeUnit.SECONDS)
-@Fork(value = 1)
+@Fork(value = 2)
 @State(Scope.Thread)
 public class ImperativeVsReactivePerfTest {
     @Param({ "10", "1000000" })
     public int times;
 
-    Flow<OrderTotalWithDiscount> flow;
+    Flux<OrderTotalWithDiscount> flow;
     OrderProcessingService orderProcessingService;
     OrderRequest[] orderRequests;
 
@@ -65,12 +60,21 @@ public class ImperativeVsReactivePerfTest {
 
         orderRequests = array;
         orderProcessingService = new OrderProcessingService(currencyService);
-        flow = orderProcessingService.process(Flow.fromArray(array));
+        flow = orderProcessingService.process(Flux.fromArray(array));
     }
 
     @Benchmark
-    public Object reactivePerformance(Blackhole bh) {
-        PerfSubscriber lo = new PerfSubscriber(bh);
+    public Object reactiveSlowPathPerformance(Blackhole bh) {
+        FastPerfSubscriber lo = new FastPerfSubscriber(bh);
+
+        flow.subscribe(lo);
+
+        return lo;
+    }
+
+    @Benchmark
+    public Object reactiveFastPathPerformance(Blackhole bh) {
+        FastPerfSubscriber lo = new FastPerfSubscriber(bh);
 
         flow.subscribe(lo);
 
@@ -81,6 +85,13 @@ public class ImperativeVsReactivePerfTest {
     public void imperativePerformance(Blackhole bh) {
         for (OrderRequest orderRequest : orderRequests) {
             bh.consume(orderProcessingService.imperativeProcessing(orderRequest));
+        }
+    }
+
+    @Benchmark
+    public void synchronousFunctionalPerformance(Blackhole bh) {
+        for (OrderRequest orderRequest : orderRequests) {
+            bh.consume(orderProcessingService.synchronousFunctionalProcessing(orderRequest));
         }
     }
 
