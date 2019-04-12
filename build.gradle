@@ -13,10 +13,29 @@ repositories {
 }
 
 jmh {
-    include = ['org.test.app.service.ImperativeVsReactivePerfTest'] // include pattern (regular expression) for benchmarks to be executed
+    include = ['org.test.app.service.ImperativeVsReactivePerfTest*'] // include pattern (regular expression) for benchmarks to be executed
     resultFormat = 'JSON' // Result format type (one of CSV, JSON, NONE, SCSV, TEXT)
-
-    duplicateClassesStrategy = 'warn' // Strategy to apply when encountring duplicate 
+    humanOutputFile = project.file("${project.buildDir}/reports/jmh/human.txt") // human-readable output file
+    resultsFile = project.file("${project.buildDir}/reports/jmh/results.txt")
+    jvmArgs = [
+        '-XX:+UnlockDiagnosticVMOptions',
+        '-XX:+LogCompilation',
+        '-XX:LogFile=' + "${project.buildDir}/reports/jmh/jvmlogs.txt",
+        '-XX:+PrintAssembly',
+        '-XX:+PrintOptoAssembly',
+        '-XX:+PrintInterpreter',
+        '-XX:+PrintNMethods',
+        '-XX:+PrintNativeNMethods',
+        '-XX:+PrintSignatureHandlers',
+        '-XX:+PrintAdapterHandlers',  
+        '-XX:+PrintStubCode',
+        '-XX:+PrintCompilation', 
+        '-XX:+PrintInlining',
+        '-XX:+TraceClassLoading',  
+        '-XX:PrintAssemblyOptions=syntax'
+    ]
+    profilers = ['gc']
+    duplicateClassesStrategy = 'warn' // Strategy to apply when encountring duplicate
     // classes during creation of the fat jar (i.e. while executing jmhJar task)
 }
 
