@@ -29,8 +29,8 @@ import static org.test.app.model.Currency.EUR;
 import static org.test.app.model.Currency.UAH;
 
 @BenchmarkMode(Mode.Throughput)
-@Warmup(iterations = 5, time = 1)
-@Measurement(iterations = 5, time = 60)
+@Warmup(iterations = 5, time = 120)
+@Measurement(iterations = 20, time = 30)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Fork(value = 2)
 @State(Scope.Thread)
