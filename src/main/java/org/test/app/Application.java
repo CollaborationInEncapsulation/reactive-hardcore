@@ -33,34 +33,34 @@ public class Application {
             UAH
         );
 
-        Flow<OrderTotalWithDiscount> resultPublisher = processingService
-            .process(Flow.just(order, order));
+//        Flow<OrderTotalWithDiscount> resultPublisher = processingService
+//            .process(Flow.just(order, order));
 
-        resultPublisher.subscribe(new Subscriber<OrderTotalWithDiscount>() {
-
-            Subscription s;
-
-            @Override
-            public void onSubscribe(Subscription s) {
-                this.s = s;
-                s.request(1);
-            }
-
-            @Override
-            public void onNext(OrderTotalWithDiscount result) {
-                System.out.println("Order with discount: \n" + result);
-                s.request(1);
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                s = null;
-            }
-
-            @Override
-            public void onComplete() {
-                s = null;
-            }
-        });
+//        resultPublisher.subscribe(new Subscriber<OrderTotalWithDiscount>() {
+//
+//            Subscription s;
+//
+//            @Override
+//            public void onSubscribe(Subscription s) {
+//                this.s = s;
+//                s.request(1);
+//            }
+//
+//            @Override
+//            public void onNext(OrderTotalWithDiscount result) {
+//                System.out.println("Order with discount: \n" + result);
+//                s.request(1);
+//            }
+//
+//            @Override
+//            public void onError(Throwable t) {
+//                s = null;
+//            }
+//
+//            @Override
+//            public void onComplete() {
+//                s = null;
+//            }
+//        });
     }
 }

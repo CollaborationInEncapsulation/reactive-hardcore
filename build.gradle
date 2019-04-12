@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'me.champeau.gradle.jmh' version '0.4.7'
+    id 'me.champeau.gradle.jmh' version '0.4.8'
 }
 
 group 'org.demo.reactive'
@@ -10,6 +10,20 @@ sourceCompatibility = 11
 
 repositories {
     mavenCentral()
+}
+
+jmh {
+    include = ['org.test.app.service.ImperativeVsReactivePerfTest'] // include pattern (regular expression) for benchmarks to be executed
+    resultFormat = 'JSON' // Result format type (one of CSV, JSON, NONE, SCSV, TEXT)
+
+    duplicateClassesStrategy = 'warn' // Strategy to apply when encountring duplicate 
+    // classes during creation of the fat jar (i.e. while executing jmhJar task)
+}
+
+test { //this is the gradle task to be executed
+    useTestNG() { //Tells Gradle to use TestNG
+        useDefaultListeners = true // Tells TestNG to execute its default reporting structure
+    }
 }
 
 dependencies {

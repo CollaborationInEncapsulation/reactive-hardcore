@@ -22,6 +22,7 @@ import org.test.app.model.OrderTotalWithDiscount;
 import org.test.app.model.Product;
 import org.test.app.model.ProductPackage;
 import org.test.reactive.FastPerfSubscriber;
+import org.test.reactive.SlowPerfSubscriber;
 import reactor.core.publisher.Flux;
 
 import static java.util.Arrays.asList;
@@ -65,7 +66,7 @@ public class ImperativeVsReactivePerfTest {
 
     @Benchmark
     public Object reactiveSlowPathPerformance(Blackhole bh) {
-        FastPerfSubscriber lo = new FastPerfSubscriber(bh);
+        SlowPerfSubscriber lo = new SlowPerfSubscriber(bh);
 
         flow.subscribe(lo);
 
@@ -94,8 +95,8 @@ public class ImperativeVsReactivePerfTest {
             bh.consume(orderProcessingService.synchronousFunctionalProcessing(orderRequest));
         }
     }
-
-    public static void main(String[] args) throws IOException, RunnerException {
-        org.openjdk.jmh.Main.main(args);
-    }
+//
+//    public static void main(String[] args) throws IOException, RunnerException {
+//        org.openjdk.jmh.Main.main(args);
+//    }
 }

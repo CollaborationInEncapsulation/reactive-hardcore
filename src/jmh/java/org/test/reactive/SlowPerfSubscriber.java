@@ -21,7 +21,9 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 public final class SlowPerfSubscriber implements Subscriber<Object> {
-    final  Blackhole      bh;
+    final Blackhole bh;
+
+    Subscription s;
 
     public SlowPerfSubscriber(Blackhole bh) {
         this.bh = bh;
@@ -29,12 +31,15 @@ public final class SlowPerfSubscriber implements Subscriber<Object> {
 
     @Override
     public void onSubscribe(Subscription subscription) {
-        subscription.request(Long.MAX_VALUE);
+        s = subscription;
+
+        subscription.request(1);
     }
 
     @Override
     public void onNext(Object item) {
         bh.consume(item);
+        s.request(1);
     }
 
     @Override

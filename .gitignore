@@ -5,6 +5,7 @@
 *.war
 *.ear
 /build/
+**/out
 
 .gradle
 .m2
