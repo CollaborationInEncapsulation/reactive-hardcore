@@ -1,6 +1,5 @@
 package org.test.app.service;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -16,7 +15,6 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
-import org.openjdk.jmh.runner.RunnerException;
 import org.test.app.model.OrderRequest;
 import org.test.app.model.OrderTotalWithDiscount;
 import org.test.app.model.Product;
@@ -31,8 +29,8 @@ import static org.test.app.model.Currency.EUR;
 import static org.test.app.model.Currency.UAH;
 
 @BenchmarkMode(Mode.Throughput)
-@Warmup(iterations = 5, time = 20)
-@Measurement(iterations = 10, time = 60)
+@Warmup(iterations = 5, time = 120)
+@Measurement(iterations = 20, time = 60)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Fork(value = 2)
 @State(Scope.Thread)
