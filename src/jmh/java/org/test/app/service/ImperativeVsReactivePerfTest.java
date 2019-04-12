@@ -1,7 +1,10 @@
 package org.test.app.service;
 
 import java.util.Arrays;
+import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -29,7 +32,7 @@ import static org.test.app.model.Currency.EUR;
 import static org.test.app.model.Currency.UAH;
 
 @BenchmarkMode(Mode.Throughput)
-@Warmup(iterations = 5, time = 120)
+@Warmup(iterations = 5, time = 180)
 @Measurement(iterations = 20, time = 30)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Fork(value = 2)
@@ -41,10 +44,11 @@ public class ImperativeVsReactivePerfTest {
     Flux<OrderTotalWithDiscount> flow;
     OrderProcessingService orderProcessingService;
     OrderRequest[] orderRequests;
+    Spliterator<OrderRequest> orderRequestSpliterator;
 
     @Setup
     public void setup() {
-        OrderRequest order = new OrderRequest(
+        final OrderRequest order = new OrderRequest(
             "order-1",
             asList(
                 new ProductPackage(new Product("p-1", "Milk 1L", UAH, 27.00), 2),
@@ -53,18 +57,41 @@ public class ImperativeVsReactivePerfTest {
             ),
             UAH
         );
-        CurrencyService currencyService = new CurrencyService();
-        OrderRequest[] array = new OrderRequest[times];
+        final CurrencyService currencyService = new CurrencyService();
+        final OrderRequest[] array = new OrderRequest[times];
+
         Arrays.fill(array, order);
 
         orderRequests = array;
+        orderRequestSpliterator = Arrays.spliterator(array);
         orderProcessingService = new OrderProcessingService(currencyService);
         flow = orderProcessingService.process(Flux.fromArray(array));
     }
 
     @Benchmark
+    public void imperativePerformance(Blackhole bh) {
+        final OrderProcessingService orderProcessingService = this.orderProcessingService;
+        final OrderRequest[] orderRequests = this.orderRequests;
+        final int size = times;
+
+        for (int i = 0; i < size; i++) {
+            bh.consume(orderProcessingService.imperativeProcessing(orderRequests[i]));
+        }
+    }
+
+    @Benchmark
+    public Object javaStreamPerformance(Blackhole bh) {
+        final Stream<OrderTotalWithDiscount> stream = orderProcessingService.javaStreamsProcessing(
+            StreamSupport.stream(orderRequestSpliterator, false));
+
+        stream.forEach(bh::consume);
+
+        return stream;
+    }
+
+    @Benchmark
     public Object reactiveSlowPathPerformance(Blackhole bh) {
-        SlowPerfSubscriber lo = new SlowPerfSubscriber(bh);
+        final SlowPerfSubscriber lo = new SlowPerfSubscriber(bh);
 
         flow.subscribe(lo);
 
@@ -73,26 +100,13 @@ public class ImperativeVsReactivePerfTest {
 
     @Benchmark
     public Object reactiveFastPathPerformance(Blackhole bh) {
-        FastPerfSubscriber lo = new FastPerfSubscriber(bh);
+        final FastPerfSubscriber lo = new FastPerfSubscriber(bh);
 
         flow.subscribe(lo);
 
         return lo;
     }
 
-    @Benchmark
-    public void imperativePerformance(Blackhole bh) {
-        for (OrderRequest orderRequest : orderRequests) {
-            bh.consume(orderProcessingService.imperativeProcessing(orderRequest));
-        }
-    }
-
-    @Benchmark
-    public void synchronousFunctionalPerformance(Blackhole bh) {
-        for (OrderRequest orderRequest : orderRequests) {
-            bh.consume(orderProcessingService.synchronousFunctionalProcessing(orderRequest));
-        }
-    }
 //
 //    public static void main(String[] args) throws IOException, RunnerException {
 //        org.openjdk.jmh.Main.main(args);
