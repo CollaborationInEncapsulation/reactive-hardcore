@@ -30,7 +30,7 @@ import static org.test.app.model.Currency.UAH;
 
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5, time = 1)
-@Measurement(iterations = 5, time = 1)
+@Measurement(iterations = 5, time = 60)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Fork(value = 2)
 @State(Scope.Thread)
