@@ -34,9 +34,24 @@ jmh {
         '-XX:+TraceClassLoading',  
         '-XX:PrintAssemblyOptions=syntax'
     ]
-    profilers = ['gc']
+    profilers = ['gc', 'perfasm']
     duplicateClassesStrategy = 'warn' // Strategy to apply when encountring duplicate
     // classes during creation of the fat jar (i.e. while executing jmhJar task)
+}
+
+jmhJar {
+    exclude 'LICENSE'
+}
+
+task benchmarkJar(type: Jar, dependsOn: jmhJar) {
+    manifest {
+        attributes 'Main-Class': 'org.openjdk.jmh.Main'
+    }
+    classifier = 'benchmark'
+    from {
+        (jmhJar.outputs.files + configurations.jmh + configurations.jmhRuntime)
+                .collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
 
 test { //this is the gradle task to be executed
