@@ -47,7 +47,7 @@ public class ArrayPublisherTest extends PublisherVerification<Long> {
         Long[] array = generate(toRequest);
         ArrayPublisher<Long> publisher = new ArrayPublisher<>(array);
 
-        publisher.subscribe(new Subscriber<>() {
+        publisher.subscribe(new Subscriber<Long>() {
             @Override
             public void onSubscribe(Subscription s) {
                 order.add(0);
@@ -84,13 +84,13 @@ public class ArrayPublisherTest extends PublisherVerification<Long> {
     @Test
     public void mustSupportBackpressureControl() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        ArrayList<Long> collected = new ArrayList<>();
+        ArrayList<Long> collected = new ArrayList<Long>();
         long toRequest = 5L;
         Long[] array = generate(toRequest);
-        ArrayPublisher<Long> publisher = new ArrayPublisher<>(array);
+        ArrayPublisher<Long> publisher = new ArrayPublisher<Long>(array);
         Subscription[] subscription = new Subscription[1];
 
-        publisher.subscribe(new Subscriber<>() {
+        publisher.subscribe(new Subscriber<Long>() {
             @Override
             public void onSubscribe(Subscription s) {
                 subscription[0] = s;
@@ -136,9 +136,9 @@ public class ArrayPublisherTest extends PublisherVerification<Long> {
         CountDownLatch latch = new CountDownLatch(1);
         Long[] array = new Long[] { null };
         AtomicReference<Throwable> error = new AtomicReference<>();
-        ArrayPublisher<Long> publisher = new ArrayPublisher<>(array);
+        ArrayPublisher<Long> publisher = new ArrayPublisher<Long>(array);
 
-        publisher.subscribe(new Subscriber<>() {
+        publisher.subscribe(new Subscriber<Long>() {
             @Override
             public void onSubscribe(Subscription s) {
                 s.request(4);
@@ -167,12 +167,12 @@ public class ArrayPublisherTest extends PublisherVerification<Long> {
     @Test
     public void shouldNotDieInStackOverflow() throws InterruptedException {
     	CountDownLatch latch = new CountDownLatch(1);
-    	ArrayList<Long> collected = new ArrayList<>();
+    	ArrayList<Long> collected = new ArrayList<Long>();
     	long toRequest = 1000L;
     	Long[] array = generate(toRequest);
-    	ArrayPublisher<Long> publisher = new ArrayPublisher<>(array);
+    	ArrayPublisher<Long> publisher = new ArrayPublisher<Long>(array);
 
-    	publisher.subscribe(new Subscriber<>() {
+    	publisher.subscribe(new Subscriber<Long>() {
     		Subscription s;
 
     		@Override
@@ -207,12 +207,12 @@ public class ArrayPublisherTest extends PublisherVerification<Long> {
     @Test
     public void shouldBePossibleToCancelSubscription() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        ArrayList<Long> collected = new ArrayList<>();
+        ArrayList<Long> collected = new ArrayList<Long>();
         long toRequest = 1000L;
         Long[] array = generate(toRequest);
-        ArrayPublisher<Long> publisher = new ArrayPublisher<>(array);
+        ArrayPublisher<Long> publisher = new ArrayPublisher<Long>(array);
 
-        publisher.subscribe(new Subscriber<>() {
+        publisher.subscribe(new Subscriber<Long>() {
 
             @Override
             public void onSubscribe(Subscription s) {
@@ -244,12 +244,12 @@ public class ArrayPublisherTest extends PublisherVerification<Long> {
     @Test
     public void multithreadingTest() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        ArrayList<Long> collected = new ArrayList<>();
+        ArrayList<Long> collected = new ArrayList<Long>();
         final int n = 5000;
         Long[] array = generate(n);
-        ArrayPublisher<Long> publisher = new ArrayPublisher<>(array);
+        ArrayPublisher<Long> publisher = new ArrayPublisher<Long>(array);
 
-        publisher.subscribe(new Subscriber<>() {
+        publisher.subscribe(new Subscriber<Long>() {
             private Subscription s;
 
             @Override

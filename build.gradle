@@ -6,7 +6,7 @@ plugins {
 group 'org.demo.reactive'
 version '1.0-SNAPSHOT'
 
-sourceCompatibility = 11
+sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
@@ -18,6 +18,7 @@ jmh {
     humanOutputFile = project.file("${project.buildDir}/reports/jmh/human.txt") // human-readable output file
     resultsFile = project.file("${project.buildDir}/reports/jmh/results.txt")
     jvmArgs = [
+        '-Dgraal.UsePriorityInlining=true'
 //        '-XX:+UnlockDiagnosticVMOptions',
 //        '-XX:+LogCompilation',
 //        '-XX:LogFile=' + "${project.buildDir}/reports/jmh/jvmlogs.txt",
