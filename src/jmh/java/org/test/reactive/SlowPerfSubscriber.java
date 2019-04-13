@@ -20,7 +20,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public final class SlowPerfSubscriber implements Subscriber<Object> {
+public final class SlowPerfSubscriber<T> implements Subscriber<T> {
     final Blackhole bh;
 
     Subscription s;
@@ -37,7 +37,7 @@ public final class SlowPerfSubscriber implements Subscriber<Object> {
     }
 
     @Override
-    public void onNext(Object item) {
+    public void onNext(T item) {
         bh.consume(item);
         s.request(1);
     }

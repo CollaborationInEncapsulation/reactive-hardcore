@@ -18,7 +18,7 @@ jmh {
     humanOutputFile = project.file("${project.buildDir}/reports/jmh/human.txt") // human-readable output file
     resultsFile = project.file("${project.buildDir}/reports/jmh/results.txt")
     jvmArgs = [
-        '-Dgraal.UsePriorityInlining=true'
+        '-XX:+UseG1GC'
 //        '-XX:+UnlockDiagnosticVMOptions',
 //        '-XX:+LogCompilation',
 //        '-XX:LogFile=' + "${project.buildDir}/reports/jmh/jvmlogs.txt",

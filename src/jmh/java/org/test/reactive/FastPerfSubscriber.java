@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 David Karnok
+ * Copyright 2019 original authio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import org.openjdk.jmh.infra.Blackhole;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public final class FastPerfSubscriber implements Subscriber<Object> {
-    final  Blackhole      bh;
+public final class FastPerfSubscriber<T> implements Subscriber<T> {
+    final Blackhole bh;
 
     public FastPerfSubscriber(Blackhole bh) {
         this.bh = bh;
@@ -33,7 +33,7 @@ public final class FastPerfSubscriber implements Subscriber<Object> {
     }
 
     @Override
-    public void onNext(Object item) {
+    public void onNext(T item) {
         bh.consume(item);
     }
 

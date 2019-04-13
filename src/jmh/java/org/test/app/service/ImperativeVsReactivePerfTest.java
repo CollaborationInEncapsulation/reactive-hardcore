@@ -1,10 +1,8 @@
 package org.test.app.service;
 
 import java.util.Arrays;
-import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -44,7 +42,6 @@ public class ImperativeVsReactivePerfTest {
     Flux<OrderTotalWithDiscount> flow;
     OrderProcessingService orderProcessingService;
     OrderRequest[] orderRequests;
-    Spliterator<OrderRequest> orderRequestSpliterator;
 
     @Setup
     public void setup() {
@@ -63,7 +60,6 @@ public class ImperativeVsReactivePerfTest {
         Arrays.fill(array, order);
 
         orderRequests = array;
-        orderRequestSpliterator = Arrays.spliterator(array);
         orderProcessingService = new OrderProcessingService(currencyService);
         flow = orderProcessingService.process(Flux.fromArray(array));
     }
@@ -81,8 +77,8 @@ public class ImperativeVsReactivePerfTest {
 
     @Benchmark
     public Object javaStreamPerformance(Blackhole bh) {
-        final Stream<OrderTotalWithDiscount> stream = orderProcessingService.javaStreamsProcessing(
-            StreamSupport.stream(orderRequestSpliterator, false));
+        final Stream<OrderTotalWithDiscount> stream = orderProcessingService
+            .javaStreamsProcessing(Arrays.stream(orderRequests));
 
         stream.forEach(bh::consume);
 
@@ -91,7 +87,7 @@ public class ImperativeVsReactivePerfTest {
 
     @Benchmark
     public Object reactiveSlowPathPerformance(Blackhole bh) {
-        final SlowPerfSubscriber lo = new SlowPerfSubscriber(bh);
+        final SlowPerfSubscriber<OrderTotalWithDiscount> lo = new SlowPerfSubscriber<>(bh);
 
         flow.subscribe(lo);
 
@@ -100,15 +96,10 @@ public class ImperativeVsReactivePerfTest {
 
     @Benchmark
     public Object reactiveFastPathPerformance(Blackhole bh) {
-        final FastPerfSubscriber lo = new FastPerfSubscriber(bh);
+        final FastPerfSubscriber<OrderTotalWithDiscount> lo = new FastPerfSubscriber<>(bh);
 
         flow.subscribe(lo);
 
         return lo;
     }
-
-//
-//    public static void main(String[] args) throws IOException, RunnerException {
-//        org.openjdk.jmh.Main.main(args);
-//    }
 }
