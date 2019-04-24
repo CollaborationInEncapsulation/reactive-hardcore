@@ -1,7 +1,6 @@
 package org.test.reactive;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Publisher;
@@ -28,7 +27,7 @@ public class ArrayPublisher<T> implements Publisher<T> {
     @Override
     public void subscribe(Subscriber<? super T> subscriber) {
         subscriber.onSubscribe(new Subscription() {
-            AtomicInteger index = new AtomicInteger();
+            int index;
             AtomicLong requested = new AtomicLong();
             AtomicBoolean cancelled = new AtomicBoolean();
 
@@ -66,12 +65,12 @@ public class ArrayPublisher<T> implements Publisher<T> {
                 int sent = 0;
 
                 while (true) {
-                    for (; sent < requested.get() && index.get() < array.length; sent++, index.incrementAndGet()) {
+                    for (; sent < requested.get() && index < array.length; sent++, index++) {
                         if (cancelled.get()) {
                             return;
                         }
 
-                        T element = array[index.get()];
+                        T element = array[index];
 
                         if (element == null) {
                             subscriber.onError(new NullPointerException());
@@ -85,7 +84,7 @@ public class ArrayPublisher<T> implements Publisher<T> {
                         return;
                     }
 
-                    if (index.get() == array.length) {
+                    if (index == array.length) {
                         subscriber.onComplete();
                         return;
                     }

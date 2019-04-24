@@ -28,14 +28,14 @@ public class ArrayPublisherPerfTest {
     @Param({ "1000000" })
     public int times;
 
-//    UnoptimizedArrayPublisher<Integer> unoptimizedArrayPublisher;
+    UnoptimizedArrayPublisher<Integer> unoptimizedArrayPublisher;
     ArrayPublisher<Integer> arrayPublisher;
 
     @Setup
     public void setup() {
         Integer[] array = new Integer[times];
         Arrays.fill(array, 777);
-//        unoptimizedArrayPublisher = new UnoptimizedArrayPublisher<>(array);
+        unoptimizedArrayPublisher = new UnoptimizedArrayPublisher<>(array);
         arrayPublisher = new ArrayPublisher<>(array);
     }
 
@@ -52,7 +52,7 @@ public class ArrayPublisherPerfTest {
     public Object unoptimizedPublisherPerformance(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);
 
-//        unoptimizedArrayPublisher.subscribe(lo);
+        unoptimizedArrayPublisher.subscribe(lo);
 
         return lo;
     }
