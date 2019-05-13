@@ -30,13 +30,13 @@ import static org.test.app.model.Currency.EUR;
 import static org.test.app.model.Currency.UAH;
 
 @BenchmarkMode(Mode.Throughput)
-@Warmup(iterations = 5, time = 180)
-@Measurement(iterations = 20, time = 30)
+@Warmup(iterations = 2, time = 10)
+@Measurement(iterations = 2, time = 10)
 @OutputTimeUnit(TimeUnit.SECONDS)
-@Fork(value = 2)
+@Fork(value = 1)
 @State(Scope.Thread)
 public class ImperativeVsReactivePerfTest {
-    @Param({ "10", "1000000" })
+    @Param({ "10" })
     public int times;
 
     Flux<OrderTotalWithDiscount> flow;
@@ -64,27 +64,27 @@ public class ImperativeVsReactivePerfTest {
         flow = orderProcessingService.process(Flux.fromArray(array));
     }
 
-    @Benchmark
-    public void imperativePerformance(Blackhole bh) {
-        final OrderProcessingService orderProcessingService = this.orderProcessingService;
-        final OrderRequest[] orderRequests = this.orderRequests;
-        final int size = times;
-
-        for (int i = 0; i < size; i++) {
-            bh.consume(orderProcessingService.imperativeProcessing(orderRequests[i]));
-        }
-    }
-
-    @Benchmark
-    public Object javaStreamPerformance(Blackhole bh) {
-        final Stream<OrderTotalWithDiscount> stream = orderProcessingService
-            .javaStreamsProcessing(Arrays.stream(orderRequests));
-
-        stream.forEach(bh::consume);
-
-        return stream;
-    }
-
+//    @Benchmark
+//    public void imperativePerformance(Blackhole bh) {
+//        final OrderProcessingService orderProcessingService = this.orderProcessingService;
+//        final OrderRequest[] orderRequests = this.orderRequests;
+//        final int size = times;
+//
+//        for (int i = 0; i < size; i++) {
+//            bh.consume(orderProcessingService.imperativeProcessing(orderRequests[i]));
+//        }
+//    }
+//
+//    @Benchmark
+//    public Object javaStreamPerformance(Blackhole bh) {
+//        final Stream<OrderTotalWithDiscount> stream = orderProcessingService
+//            .javaStreamsProcessing(Arrays.stream(orderRequests));
+//
+//        stream.forEach(bh::consume);
+//
+//        return stream;
+//    }
+//
     @Benchmark
     public Object reactiveSlowPathPerformance(Blackhole bh) {
         final SlowPerfSubscriber<OrderTotalWithDiscount> lo = new SlowPerfSubscriber<>(bh);
@@ -93,13 +93,17 @@ public class ImperativeVsReactivePerfTest {
 
         return lo;
     }
+//
+//    @Benchmark
+//    public Object reactiveFastPathPerformance(Blackhole bh) {
+//        final FastPerfSubscriber<OrderTotalWithDiscount> lo = new FastPerfSubscriber<>(bh);
+//
+//        flow.subscribe(lo);
+//
+//        return lo;
+//    }
 
-    @Benchmark
-    public Object reactiveFastPathPerformance(Blackhole bh) {
-        final FastPerfSubscriber<OrderTotalWithDiscount> lo = new FastPerfSubscriber<>(bh);
+    public static void main(String[] args) {
 
-        flow.subscribe(lo);
-
-        return lo;
     }
 }

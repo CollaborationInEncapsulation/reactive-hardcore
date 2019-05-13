@@ -1,0 +1,17 @@
+plugins {
+    id 'java'
+}
+
+group 'org.demo.reactive'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.openjdk.jmh:jmh-core:1.21'
+    compile 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+}

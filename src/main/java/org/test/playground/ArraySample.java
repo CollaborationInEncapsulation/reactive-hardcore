@@ -1,10 +1,8 @@
 package org.test.playground;
 
-import java.util.Arrays;
 import java.util.function.Function;
 
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 
 public class ArraySample {
 
@@ -12,6 +10,17 @@ public class ArraySample {
 //        Arrays.stream(new Integer[] {1, 2, 3, 4, 5})
 //              .forEach(System.out::println);
 
+        ArraySample sample = new ArraySample();
+
+        for (int i = 0; i < 100000000; i++) {
+            sample.doWork();
+        }
+
+        System.out.println("Done");
+    }
+
+
+    public void doWork() {
         Flux.fromArray(new Integer[] {1, 2, 3, 4, 5})
             .map(Function.identity())
             .map(Function.identity())

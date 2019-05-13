@@ -48,40 +48,15 @@ public class ArrayPublisher<T> extends Flow<T> {
 
         @Override
         public void request(long n) {
-            if (n <= 0 && !cancelled) {
-                cancel();
-                subscriber.onError(new IllegalArgumentException(
-                    "§3.9 violated: positive request amount required but it was " + n
-                ));
-                return;
-            }
-
-            long initialRequested;
-
-            do {
-                initialRequested = requested;
-
-                if (initialRequested == Long.MAX_VALUE) {
-                    return;
+            if (Operators.validate(n, cancelled, this, subscriber)) {
+                if (Operators.addCap(REQUESTED, this, n) == 0) {
+                    if (n == Long.MAX_VALUE) {
+                        fastPath();
+                    }
+                    else {
+                        slowPath(n);
+                    }
                 }
-
-                n = initialRequested + n;
-
-                if (n <= 0) {
-                    n = Long.MAX_VALUE;
-                }
-
-            } while (!REQUESTED.compareAndSet(this, initialRequested, n));
-
-            if (initialRequested > 0) {
-                return;
-            }
-
-            if (n == Long.MAX_VALUE) {
-                fastPath();
-            }
-            else {
-                slowPath(n);
             }
         }
 
