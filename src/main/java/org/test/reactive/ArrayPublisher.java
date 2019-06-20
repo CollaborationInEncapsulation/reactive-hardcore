@@ -1,5 +1,9 @@
 package org.test.reactive;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -24,24 +28,21 @@ public class ArrayPublisher<T> implements Publisher<T> {
     @Override
     public void subscribe(Subscriber<? super T> subscriber) {
         subscriber.onSubscribe(new Subscription() {
-            int index;
-            long requested;
-            boolean cancelled;
+            AtomicInteger index = new AtomicInteger();
+            AtomicLong requested = new AtomicLong();
+            AtomicBoolean cancelled = new AtomicBoolean();
 
             @Override
             public void request(long n) {
-
-                if (n <= 0 && !cancelled) {
+                if (n <= 0 && !cancelled.get()) {
                     cancel();
                     subscriber.onError(new IllegalArgumentException(
-                        "§3.9 violated: positive request amount required but it was " + n));
+                        "§3.9 violated: positive request amount required but it was " + n
+                    ));
                     return;
                 }
 
-                // if requested > 0, then - someone works
-                long initialRequested = requested;
-
-                requested += n;
+                long initialRequested = requested.getAndAdd(n);
 
                 if (initialRequested > 0) {
                     return;
@@ -49,36 +50,41 @@ public class ArrayPublisher<T> implements Publisher<T> {
 
                 int sent = 0;
 
-                for (; sent < requested && index < array.length; sent++, index++) {
-                    if (cancelled) {
+                while (true) {
+                    for (; sent < requested.get() && index.get() < array.length; sent++, index.incrementAndGet()) {
+                        if (cancelled.get()) {
+                            return;
+                        }
+
+                        T element = array[index.get()];
+
+                        if (element == null) {
+                            subscriber.onError(new NullPointerException());
+                            return;
+                        }
+
+                        subscriber.onNext(element);
+                    }
+
+                    if (cancelled.get()) {
                         return;
                     }
 
-                    T element = array[index];
-
-                    if (element == null) {
-                        subscriber.onError(new NullPointerException());
+                    if (index.get() == array.length) {
+                        subscriber.onComplete();
                         return;
                     }
 
-                    subscriber.onNext(element);
+                    if (requested.addAndGet(-sent) == 0) {
+                        return;
+                    }
+                    sent = 0;
                 }
-
-                if (cancelled) {
-                    return;
-                }
-
-                if (index == array.length) {
-                    subscriber.onComplete();
-                    return;
-                }
-
-                requested -= sent;
             }
 
             @Override
             public void cancel() {
-                cancelled = true;
+                cancelled.set(true);
             }
         });
     }
