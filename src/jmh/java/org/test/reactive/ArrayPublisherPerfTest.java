@@ -1,6 +1,7 @@
 package org.test.reactive;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -25,37 +26,37 @@ import org.openjdk.jmh.runner.RunnerException;
 @Fork(value = 1)
 @State(Scope.Thread)
 public class ArrayPublisherPerfTest {
-    @Param({ "1000000" })
+    @Param({ "10" })
     public int times;
 
 //    UnoptimizedArrayPublisher<Integer> unoptimizedArrayPublisher;
-    ArrayPublisher<Integer> arrayPublisher;
+    QueuePublisher<Integer> queuePublisher;
 
     @Setup
     public void setup() {
         Integer[] array = new Integer[times];
         Arrays.fill(array, 777);
 //        unoptimizedArrayPublisher = new UnoptimizedArrayPublisher<>(array);
-        arrayPublisher = new ArrayPublisher<>(array);
+        queuePublisher = new QueuePublisher<>(() -> new ArrayDeque<>(Arrays.asList(array)));
     }
 
     @Benchmark
     public Object publisherPerformance(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);
 
-        arrayPublisher.subscribe(lo);
+        queuePublisher.subscribe(lo);
 
         return lo;
     }
 
-    @Benchmark
-    public Object unoptimizedPublisherPerformance(Blackhole bh) {
-        PerfSubscriber lo = new PerfSubscriber(bh);
-
-//        unoptimizedArrayPublisher.subscribe(lo);
-
-        return lo;
-    }
+//    @Benchmark
+//    public Object unoptimizedPublisherPerformance(Blackhole bh) {
+//        PerfSubscriber lo = new PerfSubscriber(bh);
+//
+////        unoptimizedArrayPublisher.subscribe(lo);
+//
+//        return lo;
+//    }
 
     public static void main(String[] args) throws IOException, RunnerException {
         org.openjdk.jmh.Main.main(args);
