@@ -1,9 +1,9 @@
 package org.test.app.model;
 
-import lombok.Value;
-
 import java.util.List;
 import java.util.Map;
+
+import lombok.Value;
 
 @Value
 public class CurrencyGroupedOrder {

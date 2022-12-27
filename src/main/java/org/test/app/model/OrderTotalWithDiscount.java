@@ -1,9 +1,9 @@
 package org.test.app.model;
 
-import lombok.Value;
-
 import java.util.List;
 import java.util.stream.Collectors;
+
+import lombok.Value;
 
 @Value
 public class OrderTotalWithDiscount {

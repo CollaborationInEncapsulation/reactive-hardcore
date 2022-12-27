@@ -1,19 +1,16 @@
 package org.test.app.service;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.test.app.model.Currency;
 import org.test.app.model.Product;
 import org.test.app.model.ProductPackage;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.test.app.model.Currency.CAD;
-import static org.test.app.model.Currency.EUR;
-import static org.test.app.model.Currency.UAH;
-import static org.test.app.model.Currency.USD;
+import static org.test.app.model.Currency.*;
 
 /**
  * ATTENTION: Using DOUBLE type only for demo, use a proper money types in production systems!

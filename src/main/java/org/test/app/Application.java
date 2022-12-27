@@ -1,6 +1,5 @@
 package org.test.app;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.test.app.model.OrderRequest;
@@ -9,13 +8,10 @@ import org.test.app.model.Product;
 import org.test.app.model.ProductPackage;
 import org.test.app.service.CurrencyService;
 import org.test.app.service.OrderProcessingService;
-import org.test.reactive.ArrayPublisher;
 import org.test.reactive.Flow;
 
 import static java.util.Arrays.asList;
-import static org.test.app.model.Currency.CAD;
-import static org.test.app.model.Currency.EUR;
-import static org.test.app.model.Currency.UAH;
+import static org.test.app.model.Currency.*;
 
 public class Application {
 
