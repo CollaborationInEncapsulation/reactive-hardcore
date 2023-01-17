@@ -2,10 +2,10 @@ package org.test.scrabble;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-import org.test.reactor.CoreSubscriber;
-import org.test.reactor.Flux;
-import org.test.reactor.Fuseable;
-import org.test.reactor.Operators;
+import org.test.reactor_charcs.CoreSubscriber;
+import org.test.reactor_charcs.Flux;
+import org.test.reactor_charcs.Fuseable;
+import org.test.reactor_charcs.Operators;
 
 /**
  * Streams the characters of a string.

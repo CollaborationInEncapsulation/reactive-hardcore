@@ -39,11 +39,12 @@ dependencies {
     compileOnly "org.slf4j:slf4j-api:1.7.36"
     testCompileOnly "org.slf4j:slf4j-api:1.7.36"
 
-    jmh 'org.openjdk.jmh:jmh-core:1.21'
-    jmh 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+    jmh 'org.openjdk.jmh:jmh-core:1.36'
+    jmh 'org.openjdk.jmh:jmh-generator-annprocess:1.36'
 }
 
 jmh {
+    includes = ['(ShakespearePlaysScrabbleOpt|ShakespearePlaysScrabbleRegular)']
     resultFormat = 'JSON' // Result format type (one of CSV, JSON, NONE, SCSV, TEXT)
     resultsFile = project.file("${project.buildDir}/reports/jmh/results.json")
 //    duplicateClassesStrategy = 'WARN' // Strategy to apply when encountring duplicate
